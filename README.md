@@ -246,7 +246,7 @@ The app lists the rules that cannot all be true together. Typical reasons:
 | "Dr. Sharma is needed in more sessions than there are slots." | A teacher is overloaded | Add slots or move a course to another teacher |
 | "Not enough room-slot combinations for all sessions." | Too many classes, too little space or time | Add rooms or slots, or reduce sessions per week |
 
-*(These messages are examples. Update them to match what your app actually shows.)*
+*(These messages are examples. final version may differ from the current messages.)*
 
 ---
 
