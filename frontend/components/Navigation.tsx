@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import CatIllustration from "./CatIllustration";
 import {
   favoriteScreens,
   useDemoSession,
@@ -143,12 +144,15 @@ export default function Navigation() {
       >
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-5 py-4 sm:gap-4 sm:px-8 sm:py-5">
           <div className="flex min-w-0 items-center justify-between gap-3">
-            <Link
-              href="/data"
-              className="brand-name w-fit shrink-0 rounded-xl px-1 py-1 text-[28px] font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--brand-accent)]"
-            >
-              SlotSmith
-            </Link>
+            <div className="flex min-w-0 shrink items-center gap-1 sm:gap-2">
+              <Link
+                href="/data"
+                className="brand-name w-fit shrink-0 rounded-xl px-1 py-1 text-[28px] font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--brand-accent)]"
+              >
+                SlotSmith
+              </Link>
+              <CatIllustration size="logo" />
+            </div>
             <div className="flex min-w-0 items-center justify-end gap-1 sm:gap-2">
               {userName ? (
                 <>
