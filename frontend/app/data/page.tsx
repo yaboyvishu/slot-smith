@@ -1,10 +1,5 @@
-import ScreenPlaceholder from "../../components/ScreenPlaceholder";
+import DataSetup from "../../components/DataSetup";
 
 export default function DataPage() {
-  return (
-    <ScreenPlaceholder
-      title="Data setup"
-      description="Add courses, faculty, rooms, and available time slots for your project."
-    />
-  );
+  return <DataSetup />;
 }
