@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { Playfair_Display } from "next/font/google";
+import { Chango } from "next/font/google";
 import Navigation from "../components/Navigation";
 import "./globals.css";
 
-const playfairDisplay = Playfair_Display({
+const chango = Chango({
   subsets: ["latin"],
-  weight: ["700"],
-  variable: "--font-playfair",
+  weight: ["400"],
+  variable: "--font-chango",
 });
 
 export const metadata: Metadata = {
@@ -16,13 +16,13 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${playfairDisplay.variable} h-full antialiased`}>
+    <html lang="en" className={`${chango.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col text-slate-900">
         <Navigation />
         <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-8 sm:px-8 sm:py-12">
           {children}
         </main>
-        <footer className="border-t border-[#f5e6d3]/30 px-5 py-5 text-center text-sm text-[#f5e6d3]">
+        <footer className="border-t border-[var(--brand-accent)]/30 px-5 py-5 text-center text-sm text-[var(--brand-accent)]">
           Team Curly Coders · Auto Timetable Scheduler
         </footer>
       </body>

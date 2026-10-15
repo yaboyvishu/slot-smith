@@ -13,12 +13,12 @@ export default function Navigation() {
   return (
     <nav
       aria-label="Main navigation"
-      className="w-full border-b border-[#f5e6d3]/30"
+      className="w-full border-b border-[var(--brand-accent)]/30"
     >
       <div className="mx-auto flex max-w-6xl flex-col gap-4 px-5 py-5 sm:px-8">
         <Link
           href="/data"
-          className="w-fit rounded-xl bg-[#f5e6d3] px-4 py-2 font-display text-2xl font-bold tracking-tight text-[#0a0a0a] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#f5e6d3]"
+          className="brand-name w-fit rounded-xl px-1 py-1 text-2xl font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--brand-accent)]"
         >
           SlotSmith
         </Link>
@@ -27,7 +27,7 @@ export default function Navigation() {
             <li key={screen.href}>
               <Link
                 href={screen.href}
-                className="inline-flex min-h-10 items-center rounded-lg px-3 text-sm font-medium text-[#f5e6d3] transition hover:bg-[#f5e6d3] hover:text-[#0a0a0a] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f5e6d3]"
+                className="inline-flex min-h-10 items-center rounded-lg px-3 text-sm font-medium text-[var(--brand-accent)] transition hover:bg-[var(--brand-accent)] hover:text-[#0b1d4d] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-accent)]"
               >
                 {screen.label}
               </Link>

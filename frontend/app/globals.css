@@ -2,15 +2,17 @@
 
 :root {
   color-scheme: light;
-  --page-background: #3b2417;
-}
-
-@theme inline {
-  --font-sans: Arial, Helvetica, sans-serif;
-  --font-display: var(--font-playfair);
+  --page-background: #0b1d4d;
+  --brand-accent: #f8c8dc;
+  --panel-background: #f4f6fb;
 }
 
 body {
   background: var(--page-background);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+.brand-name {
+  color: var(--brand-accent);
+  font-family: Ravie, var(--font-chango), cursive;
 }
