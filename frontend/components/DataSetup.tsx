@@ -208,7 +208,7 @@ function FieldInput({
         aria-invalid={Boolean(error)}
         aria-describedby={error ? errorId : undefined}
         onChange={(event) => onChange(event.target.value)}
-        className="min-h-10 w-full rounded-md border border-slate-300 bg-white px-2.5 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus-visible:border-blue-700 focus-visible:ring-2 focus-visible:ring-blue-200 aria-[invalid=true]:border-red-600"
+        className="min-h-10 w-full rounded-md border border-slate-300 bg-[#fff8ef] px-2.5 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-600 focus-visible:border-blue-700 focus-visible:ring-2 focus-visible:ring-blue-200 aria-[invalid=true]:border-red-600"
       />
       {error && (
         <p id={errorId} className="mt-1 max-w-48 text-xs leading-5 text-red-700">
@@ -239,7 +239,7 @@ function DayInput({
         id={id}
         value={value}
         onChange={(event) => onChange(event.target.value as Day)}
-        className="min-h-10 w-full rounded-md border border-slate-300 bg-white px-2.5 text-sm text-slate-900 shadow-sm outline-none transition focus-visible:border-blue-700 focus-visible:ring-2 focus-visible:ring-blue-200"
+        className="min-h-10 w-full rounded-md border border-slate-300 bg-[#fff8ef] px-2.5 text-sm text-slate-900 shadow-sm outline-none transition focus-visible:border-blue-700 focus-visible:ring-2 focus-visible:ring-blue-200"
       >
         {days.map((day) => (
           <option key={day} value={day}>
@@ -279,7 +279,7 @@ function FacultyInput({
         onChange={(event) => onChange(event.target.value)}
         aria-invalid={Boolean(error)}
         aria-describedby={error ? errorId : undefined}
-        className="min-h-10 w-full rounded-md border border-slate-300 bg-white px-2.5 text-sm text-slate-900 shadow-sm outline-none transition focus-visible:border-blue-700 focus-visible:ring-2 focus-visible:ring-blue-200 aria-[invalid=true]:border-red-600"
+        className="min-h-10 w-full rounded-md border border-slate-300 bg-[#fff8ef] px-2.5 text-sm text-slate-900 shadow-sm outline-none transition focus-visible:border-blue-700 focus-visible:ring-2 focus-visible:ring-blue-200 aria-[invalid=true]:border-red-600"
       >
         <option value="">Choose faculty</option>
         {value && !faculty.some((person) => person.id === value) && (
@@ -318,7 +318,7 @@ function EditableTable<T extends { id: string }>({
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-slate-700">
           {rows.length === 0
             ? emptyMessage
             : `${rows.length} ${rows.length === 1 ? "row" : "rows"}`}
@@ -335,7 +335,7 @@ function EditableTable<T extends { id: string }>({
       <div className="overflow-x-auto rounded-xl border border-slate-200">
         <table className="w-full min-w-max border-collapse text-left">
           <caption className="sr-only">{label} data</caption>
-          <thead className="bg-slate-100">
+          <thead className="bg-[#ead3b8]">
             <tr>
               {columns.map((column) => (
                 <th
@@ -351,12 +351,12 @@ function EditableTable<T extends { id: string }>({
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-200 bg-white">
+          <tbody className="divide-y divide-slate-200 bg-[#f5e6d3]">
             {rows.length === 0 ? (
               <tr>
                 <td
                   colSpan={columns.length + 1}
-                  className="px-4 py-8 text-center text-sm text-slate-500"
+                  className="bg-[#fff8ef] px-4 py-8 text-center text-sm text-slate-700"
                 >
                   No {label.toLowerCase()} have been added yet. Use “Add row” to
                   create one.
@@ -959,13 +959,13 @@ export default function DataSetup() {
   return (
     <section className="space-y-6">
       <header>
-        <p className="text-sm font-semibold uppercase tracking-wide text-blue-700">
+        <p className="text-sm font-semibold uppercase tracking-wide text-[#f5e6d3]">
           Phase 1 · Data setup
         </p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-[#f5e6d3]">
           Project data
         </h1>
-        <p className="mt-3 max-w-3xl leading-7 text-slate-600">
+        <p className="mt-3 max-w-3xl leading-7 text-[#f5e6d3]">
           Create a project, then add the courses, faculty, rooms, and
           time slots used by the scheduler. Changes are saved when you choose
           “Save project data”.
@@ -975,7 +975,7 @@ export default function DataSetup() {
       {!project && (
         <form
           onSubmit={handleCreateProject}
-          className="max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
+          className="max-w-2xl rounded-2xl border border-slate-200 bg-[#f5e6d3] p-6 shadow-sm sm:p-8"
         >
           <h2 className="text-lg font-semibold text-slate-950">Start a project</h2>
           <p className="mt-2 text-sm leading-6 text-slate-600">
@@ -994,7 +994,7 @@ export default function DataSetup() {
             required
             value={projectName}
             onChange={(event) => setProjectName(event.target.value)}
-            className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 px-3 text-slate-900 outline-none focus-visible:border-blue-700 focus-visible:ring-2 focus-visible:ring-blue-200"
+            className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-[#fff8ef] px-3 text-slate-900 outline-none focus-visible:border-blue-700 focus-visible:ring-2 focus-visible:ring-blue-200"
           />
           <button
             type="submit"
@@ -1032,10 +1032,10 @@ export default function DataSetup() {
 
       {project && projectData && (
         <div className="space-y-5">
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-[#f5e6d3] px-4 py-3">
             <div>
               <p className="font-semibold text-slate-900">{project.name}</p>
-              <p className="text-sm text-slate-500">Project ID: {project.id}</p>
+              <p className="text-sm text-slate-600">Project ID: {project.id}</p>
             </div>
             <button
               type="button"
@@ -1083,8 +1083,8 @@ export default function DataSetup() {
                   onClick={() => setActiveTab(tab.key)}
                   className={`min-h-11 rounded-t-lg px-4 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 ${
                     activeTab === tab.key
-                      ? "border-b-2 border-blue-700 bg-white text-blue-800"
-                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+                      ? "border-b-2 border-blue-700 bg-[#f5e6d3] text-blue-800"
+                      : "text-slate-200 hover:bg-[#f5e6d3] hover:text-slate-950"
                   }`}
                 >
                   {tab.label}

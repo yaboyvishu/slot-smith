@@ -8,7 +8,7 @@ export default function ScreenPlaceholder({
   description,
 }: ScreenPlaceholderProps) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+    <section className="rounded-2xl border border-slate-200 bg-[#f5e6d3] p-6 shadow-sm sm:p-8">
       <p className="text-sm font-semibold uppercase tracking-wide text-blue-700">
         Phase 0 setup
       </p>

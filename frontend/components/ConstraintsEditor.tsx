@@ -216,13 +216,13 @@ export default function ConstraintsEditor() {
   return (
     <section className="space-y-6">
       <header>
-        <p className="text-sm font-semibold uppercase tracking-wide text-blue-700">
+        <p className="text-sm font-semibold uppercase tracking-wide text-[#f5e6d3]">
           Phase 2 · Constraints
         </p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-[#f5e6d3]">
           Scheduling rules
         </h1>
-        <p className="mt-3 max-w-3xl leading-7 text-slate-600">
+        <p className="mt-3 max-w-3xl leading-7 text-[#f5e6d3]">
           Load a project to choose which rules the scheduler must follow and
           which faculty time preferences it should try to meet.
         </p>
@@ -230,7 +230,7 @@ export default function ConstraintsEditor() {
 
       <form
         onSubmit={handleLoad}
-        className="flex max-w-2xl flex-wrap items-end gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"
+        className="flex max-w-2xl flex-wrap items-end gap-3 rounded-2xl border border-slate-200 bg-[#f5e6d3] p-5 shadow-sm sm:p-6"
       >
         <div className="min-w-56 flex-1">
           <label
@@ -246,9 +246,9 @@ export default function ConstraintsEditor() {
             value={projectId}
             onChange={(event) => setProjectId(event.target.value)}
             aria-describedby="project-id-help"
-            className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 px-3 text-slate-900 outline-none focus-visible:border-blue-700 focus-visible:ring-2 focus-visible:ring-blue-200"
+            className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-[#fff8ef] px-3 text-slate-900 outline-none focus-visible:border-blue-700 focus-visible:ring-2 focus-visible:ring-blue-200"
           />
-          <p id="project-id-help" className="mt-1 text-xs leading-5 text-slate-500">
+          <p id="project-id-help" className="mt-1 text-xs leading-5 text-slate-600">
             Use the project id shown on the Data setup screen. Mock mode starts
             with “demo”.
           </p>
@@ -287,7 +287,7 @@ export default function ConstraintsEditor() {
       )}
 
       {!project && !isLoading && !errorMessage && (
-        <div className="max-w-2xl rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-sm leading-6 text-slate-600">
+        <div className="max-w-2xl rounded-2xl border border-dashed border-slate-300 bg-[#f5e6d3] p-6 text-sm leading-6 text-slate-600">
           Enter a project id and choose <strong>Load project</strong> to view
           and edit its constraints.
         </div>
@@ -295,10 +295,10 @@ export default function ConstraintsEditor() {
 
       {project && constraints && (
         <div className="space-y-5">
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-[#f5e6d3] px-4 py-3">
             <div>
               <p className="font-semibold text-slate-900">{project.name}</p>
-              <p className="text-sm text-slate-500">Project ID: {project.id}</p>
+              <p className="text-sm text-slate-600">Project ID: {project.id}</p>
             </div>
             <button
               type="button"
@@ -325,7 +325,7 @@ export default function ConstraintsEditor() {
 
           <section
             aria-labelledby="must-follow-heading"
-            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"
+            className="rounded-2xl border border-slate-200 bg-[#f5e6d3] p-5 shadow-sm sm:p-6"
           >
             <h2
               id="must-follow-heading"
@@ -351,7 +351,7 @@ export default function ConstraintsEditor() {
                     <span className="mt-1 block text-sm leading-6 text-slate-600">
                       {rule.description}
                     </span>
-                    <code className="mt-1 block text-xs text-slate-500">
+                    <code className="mt-1 block text-xs text-slate-600">
                       {rule.field}
                     </code>
                   </span>
@@ -371,7 +371,7 @@ export default function ConstraintsEditor() {
 
           <section
             aria-labelledby="preferences-heading"
-            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"
+            className="rounded-2xl border border-slate-200 bg-[#f5e6d3] p-5 shadow-sm sm:p-6"
           >
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -411,7 +411,7 @@ export default function ConstraintsEditor() {
             )}
 
             {constraints.preferences.length === 0 ? (
-              <p className="mt-5 rounded-lg bg-slate-50 p-4 text-sm leading-6 text-slate-600">
+              <p className="mt-5 rounded-lg bg-[#fff8ef] p-4 text-sm leading-6 text-slate-600">
                 No extra preferences have been added. Faculty preferences saved
                 in Data setup still apply to the solver.
               </p>
@@ -438,7 +438,7 @@ export default function ConstraintsEditor() {
                           <p className="font-semibold text-slate-900">
                             Faculty preference {index + 1}
                           </p>
-                          <p className="mt-1 text-xs text-slate-500">
+                          <p className="mt-1 text-xs text-slate-600">
                             id: {preference.id} · type: {preference.type}
                           </p>
                         </div>
@@ -468,7 +468,7 @@ export default function ConstraintsEditor() {
                               faculty_id: event.target.value,
                             })
                           }
-                          className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-slate-900 outline-none focus-visible:border-blue-700 focus-visible:ring-2 focus-visible:ring-blue-200"
+                          className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-[#fff8ef] px-3 text-slate-900 outline-none focus-visible:border-blue-700 focus-visible:ring-2 focus-visible:ring-blue-200"
                         >
                           {!selectedFaculty && (
                             <option value={preference.faculty_id}>
@@ -496,7 +496,7 @@ export default function ConstraintsEditor() {
                             {project.data.slots.map((slot) => (
                               <label
                                 key={slot.id}
-                                className="flex min-h-11 cursor-pointer items-start gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 focus-within:ring-2 focus-within:ring-blue-200"
+                                className="flex min-h-11 cursor-pointer items-start gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-[#fff8ef] focus-within:ring-2 focus-within:ring-blue-200"
                               >
                                 <input
                                   type="checkbox"
