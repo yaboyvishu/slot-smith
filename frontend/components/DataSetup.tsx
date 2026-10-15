@@ -208,7 +208,7 @@ function FieldInput({
         aria-invalid={Boolean(error)}
         aria-describedby={error ? errorId : undefined}
         onChange={(event) => onChange(event.target.value)}
-        className="min-h-10 w-full rounded-md border border-slate-300 bg-white px-2.5 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-600 focus-visible:border-blue-700 focus-visible:ring-2 focus-visible:ring-blue-200 aria-[invalid=true]:border-red-600"
+        className="min-h-10 w-full rounded-md border border-slate-300 bg-white px-2.5 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-600 focus-visible:border-[#8a204f] focus-visible:ring-2 focus-visible:ring-[#f8c8dc] aria-[invalid=true]:border-red-600"
       />
       {error && (
         <p id={errorId} className="mt-1 max-w-48 text-xs leading-5 text-red-700">
@@ -239,7 +239,7 @@ function DayInput({
         id={id}
         value={value}
         onChange={(event) => onChange(event.target.value as Day)}
-        className="min-h-10 w-full rounded-md border border-slate-300 bg-white px-2.5 text-sm text-slate-900 shadow-sm outline-none transition focus-visible:border-blue-700 focus-visible:ring-2 focus-visible:ring-blue-200"
+        className="min-h-10 w-full rounded-md border border-slate-300 bg-white px-2.5 text-sm text-slate-900 shadow-sm outline-none transition focus-visible:border-[#8a204f] focus-visible:ring-2 focus-visible:ring-[#f8c8dc]"
       >
         {days.map((day) => (
           <option key={day} value={day}>
@@ -279,7 +279,7 @@ function FacultyInput({
         onChange={(event) => onChange(event.target.value)}
         aria-invalid={Boolean(error)}
         aria-describedby={error ? errorId : undefined}
-        className="min-h-10 w-full rounded-md border border-slate-300 bg-white px-2.5 text-sm text-slate-900 shadow-sm outline-none transition focus-visible:border-blue-700 focus-visible:ring-2 focus-visible:ring-blue-200 aria-[invalid=true]:border-red-600"
+        className="min-h-10 w-full rounded-md border border-slate-300 bg-white px-2.5 text-sm text-slate-900 shadow-sm outline-none transition focus-visible:border-[#8a204f] focus-visible:ring-2 focus-visible:ring-[#f8c8dc] aria-[invalid=true]:border-red-600"
       >
         <option value="">Choose faculty</option>
         {value && !faculty.some((person) => person.id === value) && (
@@ -326,7 +326,7 @@ function EditableTable<T extends { id: string }>({
         <button
           type="button"
           onClick={onAdd}
-          className="min-h-10 rounded-lg border border-blue-700 px-4 text-sm font-semibold text-blue-800 transition hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
+          className="min-h-10 rounded-lg border border-[#8a204f] px-4 text-sm font-semibold text-[#681638] transition hover:bg-[#f8c8dc] hover:text-[#111111] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8a204f]"
         >
           Add row
         </button>
@@ -335,7 +335,7 @@ function EditableTable<T extends { id: string }>({
       <div className="overflow-x-auto rounded-xl border border-slate-200">
         <table className="w-full min-w-max border-collapse text-left">
           <caption className="sr-only">{label} data</caption>
-          <thead className="bg-slate-200">
+          <thead className="bg-[#dbe2ef]">
             <tr>
               {columns.map((column) => (
                 <th
@@ -975,7 +975,7 @@ export default function DataSetup() {
       {!project && (
         <form
           onSubmit={handleCreateProject}
-          className="max-w-2xl rounded-2xl border border-slate-200 bg-[var(--panel-background)] p-6 shadow-sm sm:p-8"
+          className="max-w-2xl rounded-2xl border border-slate-300 bg-[var(--panel-background)] p-6 text-slate-950 shadow-lg sm:p-8"
         >
           <h2 className="text-lg font-semibold text-slate-950">Start a project</h2>
           <p className="mt-2 text-sm leading-6 text-slate-600">
@@ -994,12 +994,12 @@ export default function DataSetup() {
             required
             value={projectName}
             onChange={(event) => setProjectName(event.target.value)}
-            className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-slate-900 outline-none focus-visible:border-blue-700 focus-visible:ring-2 focus-visible:ring-blue-200"
+            className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-slate-900 outline-none focus-visible:border-[#8a204f] focus-visible:ring-2 focus-visible:ring-[#f8c8dc]"
           />
           <button
             type="submit"
             disabled={isLoading}
-            className="mt-5 min-h-11 rounded-lg bg-blue-700 px-5 font-semibold text-white transition hover:bg-blue-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 disabled:cursor-wait disabled:opacity-60"
+            className="mt-5 min-h-11 rounded-lg bg-[#f8c8dc] px-5 font-semibold text-[#111111] transition hover:bg-[#f3a9c9] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f8c8dc] disabled:cursor-wait disabled:opacity-60"
           >
             {isLoading ? "Creating project…" : "Create project"}
           </button>
@@ -1032,7 +1032,7 @@ export default function DataSetup() {
 
       {project && projectData && (
         <div className="space-y-5">
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-[var(--panel-background)] px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-300 bg-[var(--panel-background)] px-4 py-3 text-slate-950 shadow-md">
             <div>
               <p className="font-semibold text-slate-900">{project.name}</p>
               <p className="text-sm text-slate-600">Project ID: {project.id}</p>
@@ -1041,7 +1041,7 @@ export default function DataSetup() {
               type="button"
               onClick={handleSave}
               disabled={isSaving || validationCount > 0}
-              className="min-h-11 rounded-lg bg-blue-700 px-5 font-semibold text-white transition hover:bg-blue-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="min-h-11 rounded-lg bg-[#f8c8dc] px-5 font-semibold text-[#111111] transition hover:bg-[#f3a9c9] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f8c8dc] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isSaving ? "Saving…" : "Save project data"}
             </button>
@@ -1083,8 +1083,8 @@ export default function DataSetup() {
                   onClick={() => setActiveTab(tab.key)}
                   className={`min-h-11 rounded-t-lg px-4 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 ${
                     activeTab === tab.key
-                      ? "border-b-2 border-blue-700 bg-[var(--panel-background)] text-blue-800"
-                      : "text-slate-200 hover:bg-[var(--brand-accent)] hover:text-[#0b1d4d]"
+                      ? "border-b-2 border-[#8a204f] bg-[var(--brand-accent)] text-[#111111]"
+                      : "text-white hover:bg-[var(--brand-accent)] hover:text-[#111111]"
                   }`}
                 >
                   {tab.label}

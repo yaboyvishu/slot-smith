@@ -2,17 +2,71 @@
 
 :root {
   color-scheme: light;
-  --page-background: #0b1d4d;
+  --page-background: #0a0a0a;
   --brand-accent: #f8c8dc;
   --panel-background: #f4f6fb;
+  --app-font-family: var(--font-zeyada), cursive;
+}
+
+@theme inline {
+  --font-sans: var(--app-font-family);
+  --text-xs: 1.125rem;
+  --text-xs--line-height: 1.55;
+  --text-sm: 1.125rem;
+  --text-sm--line-height: 1.55;
+  --text-base: 1.375rem;
+  --text-base--line-height: 1.55;
 }
 
 body {
   background: var(--page-background);
-  font-family: Arial, Helvetica, sans-serif;
+  color: #ffffff;
+  font-family: var(--app-font-family);
+  font-size: 1.375rem;
+  line-height: 1.6;
+  letter-spacing: 0.015em;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: var(--app-font-family);
+  letter-spacing: inherit;
+}
+
+input,
+select,
+textarea {
+  font-size: 1.375rem;
+  line-height: 1.5;
+}
+
+:focus-visible {
+  outline: 3px solid #ffffff;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 2px #0a0a0a;
 }
 
 .brand-name {
   color: var(--brand-accent);
-  font-family: Ravie, var(--font-chango), cursive;
+  font-family: var(--app-font-family);
+}
+
+table {
+  font-size: 1.25rem;
+}
+
+table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+table tbody tr:nth-child(even) {
+  background-color: #e8edf7;
+}
+
+table tbody tr:nth-child(even) td.bg-white {
+  background-color: #e8edf7;
 }

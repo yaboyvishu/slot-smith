@@ -27,7 +27,7 @@ export default function Navigation() {
             <li key={screen.href}>
               <Link
                 href={screen.href}
-                className="inline-flex min-h-10 items-center rounded-lg px-3 text-sm font-medium text-[var(--brand-accent)] transition hover:bg-[var(--brand-accent)] hover:text-[#0b1d4d] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-accent)]"
+                className="inline-flex min-h-10 items-center rounded-lg px-3 text-sm font-medium text-[var(--brand-accent)] transition hover:bg-[var(--brand-accent)] hover:text-[#111111] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-accent)]"
               >
                 {screen.label}
               </Link>

@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { Chango } from "next/font/google";
+import { Zeyada } from "next/font/google";
 import Navigation from "../components/Navigation";
 import "./globals.css";
 
-const chango = Chango({
+const zeyada = Zeyada({
   subsets: ["latin"],
   weight: ["400"],
-  variable: "--font-chango",
+  variable: "--font-zeyada",
 });
 
 export const metadata: Metadata = {
@@ -16,8 +16,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${chango.variable} h-full antialiased`}>
-      <body className="flex min-h-full flex-col text-slate-900">
+    <html lang="en" className={`${zeyada.variable} h-full antialiased`}>
+      <body className="flex min-h-full flex-col">
         <Navigation />
         <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-8 sm:px-8 sm:py-12">
           {children}

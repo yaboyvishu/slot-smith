@@ -230,7 +230,7 @@ export default function ConstraintsEditor() {
 
       <form
         onSubmit={handleLoad}
-        className="flex max-w-2xl flex-wrap items-end gap-3 rounded-2xl border border-slate-200 bg-[var(--panel-background)] p-5 shadow-sm sm:p-6"
+        className="flex max-w-2xl flex-wrap items-end gap-3 rounded-2xl border border-slate-300 bg-[var(--panel-background)] p-5 text-slate-950 shadow-lg sm:p-6"
       >
         <div className="min-w-56 flex-1">
           <label
@@ -246,7 +246,7 @@ export default function ConstraintsEditor() {
             value={projectId}
             onChange={(event) => setProjectId(event.target.value)}
             aria-describedby="project-id-help"
-            className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-slate-900 outline-none focus-visible:border-blue-700 focus-visible:ring-2 focus-visible:ring-blue-200"
+            className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-slate-900 outline-none focus-visible:border-[#8a204f] focus-visible:ring-2 focus-visible:ring-[#f8c8dc]"
           />
           <p id="project-id-help" className="mt-1 text-xs leading-5 text-slate-600">
             Use the project id shown on the Data setup screen. Mock mode starts
@@ -256,7 +256,7 @@ export default function ConstraintsEditor() {
         <button
           type="submit"
           disabled={isLoading || !projectId.trim()}
-          className="min-h-11 rounded-lg border border-blue-700 px-5 font-semibold text-blue-800 transition hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 disabled:cursor-wait disabled:opacity-50"
+          className="min-h-11 rounded-lg border border-[#8a204f] px-5 font-semibold text-[#681638] transition hover:bg-[#f8c8dc] hover:text-[#111111] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8a204f] disabled:cursor-wait disabled:opacity-50"
         >
           {isLoading ? "Loading…" : "Load project"}
         </button>
@@ -287,7 +287,7 @@ export default function ConstraintsEditor() {
       )}
 
       {!project && !isLoading && !errorMessage && (
-        <div className="max-w-2xl rounded-2xl border border-dashed border-slate-300 bg-[var(--panel-background)] p-6 text-sm leading-6 text-slate-600">
+        <div className="max-w-2xl rounded-2xl border border-dashed border-slate-300 bg-[var(--panel-background)] p-6 text-sm leading-6 text-slate-700 shadow-md">
           Enter a project id and choose <strong>Load project</strong> to view
           and edit its constraints.
         </div>
@@ -295,7 +295,7 @@ export default function ConstraintsEditor() {
 
       {project && constraints && (
         <div className="space-y-5">
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-[var(--panel-background)] px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-300 bg-[var(--panel-background)] px-4 py-3 text-slate-950 shadow-md">
             <div>
               <p className="font-semibold text-slate-900">{project.name}</p>
               <p className="text-sm text-slate-600">Project ID: {project.id}</p>
@@ -304,7 +304,7 @@ export default function ConstraintsEditor() {
               type="button"
               onClick={handleSave}
               disabled={isSaving}
-              className="min-h-11 rounded-lg bg-blue-700 px-5 font-semibold text-white transition hover:bg-blue-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 disabled:cursor-wait disabled:opacity-60"
+              className="min-h-11 rounded-lg bg-[#f8c8dc] px-5 font-semibold text-[#111111] transition hover:bg-[#f3a9c9] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f8c8dc] disabled:cursor-wait disabled:opacity-60"
             >
               {isSaving ? "Saving…" : "Save constraints"}
             </button>
@@ -325,7 +325,7 @@ export default function ConstraintsEditor() {
 
           <section
             aria-labelledby="must-follow-heading"
-            className="rounded-2xl border border-slate-200 bg-[var(--panel-background)] p-5 shadow-sm sm:p-6"
+            className="rounded-2xl border border-slate-300 bg-[var(--panel-background)] p-5 text-slate-950 shadow-lg sm:p-6"
           >
             <h2
               id="must-follow-heading"
@@ -362,7 +362,7 @@ export default function ConstraintsEditor() {
                     onChange={(event) =>
                       updateConstraint(rule.field, event.target.checked)
                     }
-                    className="mt-1 size-5 shrink-0 rounded border-slate-300 text-blue-700 accent-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
+                    className="mt-1 size-5 shrink-0 rounded border-slate-300 accent-[#8a204f] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8a204f]"
                   />
                 </label>
               ))}
@@ -371,7 +371,7 @@ export default function ConstraintsEditor() {
 
           <section
             aria-labelledby="preferences-heading"
-            className="rounded-2xl border border-slate-200 bg-[var(--panel-background)] p-5 shadow-sm sm:p-6"
+            className="rounded-2xl border border-slate-300 bg-[var(--panel-background)] p-5 text-slate-950 shadow-lg sm:p-6"
           >
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -391,7 +391,7 @@ export default function ConstraintsEditor() {
                 type="button"
                 onClick={addPreference}
                 disabled={!hasDataForPreferences}
-                className="min-h-10 rounded-lg border border-blue-700 px-4 text-sm font-semibold text-blue-800 transition hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="min-h-10 rounded-lg border border-[#8a204f] px-4 text-sm font-semibold text-[#681638] transition hover:bg-[#f8c8dc] hover:text-[#111111] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8a204f] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Add preference
               </button>
@@ -402,7 +402,7 @@ export default function ConstraintsEditor() {
                 Add at least one faculty member and one time slot in{" "}
                 <a
                   href="/data"
-                  className="font-semibold underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
+                  className="font-semibold underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8a204f]"
                 >
                   Data setup
                 </a>{" "}
@@ -468,7 +468,7 @@ export default function ConstraintsEditor() {
                               faculty_id: event.target.value,
                             })
                           }
-                          className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-slate-900 outline-none focus-visible:border-blue-700 focus-visible:ring-2 focus-visible:ring-blue-200"
+                          className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-slate-900 outline-none focus-visible:border-[#8a204f] focus-visible:ring-2 focus-visible:ring-[#f8c8dc]"
                         >
                           {!selectedFaculty && (
                             <option value={preference.faculty_id}>
@@ -509,7 +509,7 @@ export default function ConstraintsEditor() {
                                       event.target.checked,
                                     )
                                   }
-                                  className="mt-0.5 size-4 shrink-0 accent-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
+                                  className="mt-0.5 size-4 shrink-0 accent-[#8a204f] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8a204f]"
                                 />
                                 <span>{formatTimeSlot(slot)}</span>
                               </label>
@@ -530,7 +530,7 @@ export default function ConstraintsEditor() {
                                       false,
                                     )
                                   }
-                                  className="mt-0.5 size-4 shrink-0 accent-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
+                                  className="mt-0.5 size-4 shrink-0 accent-[#8a204f] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8a204f]"
                                 />
                                 <span>Unavailable slot id: {slotId}</span>
                               </label>
