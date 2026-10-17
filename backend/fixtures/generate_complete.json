@@ -1,0 +1,42 @@
+{
+  "status": "complete",
+  "timetable": [
+    {
+      "id": "E1",
+      "course_id": "C1",
+      "faculty_id": "F1",
+      "room_id": "R101",
+      "start_slot_id": "MON_09",
+      "length_slots": 1,
+      "slot_ids": [
+        "MON_09"
+      ]
+    },
+    {
+      "id": "E2",
+      "course_id": "C1",
+      "faculty_id": "F1",
+      "room_id": "R101",
+      "start_slot_id": "MON_10",
+      "length_slots": 1,
+      "slot_ids": [
+        "MON_10"
+      ]
+    },
+    {
+      "id": "E3",
+      "course_id": "C2",
+      "faculty_id": "F2",
+      "room_id": "R102",
+      "start_slot_id": "MON_10",
+      "length_slots": 2,
+      "slot_ids": [
+        "MON_10",
+        "MON_11"
+      ]
+    }
+  ],
+  "unmet_constraints": [],
+  "preferences_met": 1,
+  "preferences_total": 1
+}

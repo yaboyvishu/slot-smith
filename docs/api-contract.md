@@ -1,4 +1,4 @@
-# API Contract (v0.1, DRAFT until the team confirms)
+# API Contract (v0.2, DRAFT until the team confirms)
 
 Source of truth for the frontend and backend. The Pydantic models in
 `backend/app/models/schemas.py` implement exactly this file. If you need a
@@ -25,7 +25,8 @@ removing, or changing a type) are announced to the whole team.
 ```
 
 Codes: `VALIDATION_ERROR` (422), `BAD_REQUEST` (400), `NOT_FOUND` (404),
-`METHOD_NOT_ALLOWED` (405), `CONFLICT` (409), `INTERNAL_ERROR` (500).
+`METHOD_NOT_ALLOWED` (405), `CONFLICT` (409), `INTERNAL_ERROR` (500),
+`NOT_IMPLEMENTED` (501, a feature that is planned but not built yet).
 
 ## Data shapes
 
@@ -60,11 +61,15 @@ may be omitted: the backend recomputes it.
 
 ### Preferences
 
-`Faculty.preferred_slot_ids` and `Constraints.preferences` both express "prefers
-these slots". The solver uses the **union**. `preferences_total` counts one per
-preference entry plus one per faculty with a non-empty `preferred_slot_ids`; a
-preference is "met" when every session of that faculty's courses lands in a preferred slot.
-(Exact counting is finalised in Phase 3. The shape will not change.)
+`Faculty.preferred_slot_ids` and `Constraints.preferences` both express "this
+teacher prefers these slots". The solver uses the **union** per teacher.
+
+Counting rule (frozen here so the numbers in the UI are predictable):
+- `preferences_total` = number of teachers who have at least one preferred slot
+  (from either source).
+- A teacher's preference is **met** when *every* class session of every course they
+  teach is placed in one of their preferred slots. `preferences_met` counts those.
+- Each unmet teacher produces one `preference_unmet` item in `unmet_constraints`.
 
 ### Enums
 
@@ -96,16 +101,60 @@ Notes:
   `timetable` is `[]` and `unmet_constraints` explains why.
 - `validate` does not save anything. It checks the timetable against the project's
   current data and constraints using the same rules the solver uses.
-- Phase status: only `/api/health` exists in Phase 0. Others arrive in Phase 1 (CRUD, mock mode)
-  and later phases, with the shapes above.
+- `PUT .../data` and `PUT .../constraints` replace the stored value. Half-finished
+  data is allowed (for example a course whose `faculty_id` does not exist yet): the
+  backend only rejects bad shapes, duplicate ids, and a slot whose `end` is not later
+  than its `start`. Missing references are reported by `generate` later.
+- `PUT .../timetable` stores the edited timetable. The backend **always recomputes**
+  every entry's `slot_ids` from the project's slots (anything the client sends is
+  ignored). If the consecutive block is too short for `length_slots`, `slot_ids`
+  holds the shorter run; if `start_slot_id` is unknown it is `[start_slot_id]`.
+  `/validate` (Phase 5) reports those cases as clashes.
+- Entry ids inside one timetable must be unique (422 otherwise).
+- Unknown project id: 404 `NOT_FOUND`.
 
-## Mock mode (for frontend development)
+### Build status (what works today)
 
-With `MOCK=1` the backend returns canned responses from `backend/fixtures/`.
-Phase 0 provides `sample_project.json`. The generate/impossible/validate fixtures
-arrive in Phase 1. The frontend copies them into `frontend/mocks/`.
+| Endpoint | Status |
+|---|---|
+| health, create/get project, save data, save constraints, save timetable | **real** (Phase 1) |
+| `generate` | mock only (`MOCK=1`), real in Phase 2. Otherwise 501 `NOT_IMPLEMENTED` |
+| `validate` | mock only (`MOCK=1`), real in Phase 5. Otherwise 501 |
+| `export/pdf`, `export/ics` | 501 until Phase 6 |
+| `import` | not built (stretch) |
 
-## Example: a generate result (complete)
+## Mock mode and demo projects (for frontend development)
+
+Two projects exist from the start, so the frontend never needs to create one first:
+
+| Project id | What it is |
+|---|---|
+| `demo` | a small, solvable project (2 courses, 2 rooms, 6 slots, one teacher preference) |
+| `demo-impossible` | the same project, but Lecture Hall 1 seats 40, so Data Structures (55 students) fits nowhere |
+
+They are re-created automatically if the server's disk is wiped.
+
+With `MOCK=1` the backend returns canned responses from `backend/fixtures/` for
+`generate` and `validate`. Everything else (projects, data, constraints, timetable)
+is real and saved to disk, so the frontend can test full save/load flows.
+Pick the response with the `scenario` query parameter (unknown value: 400):
+
+| Call | `?scenario=` | Returns |
+|---|---|---|
+| `POST .../generate` | `complete` (default) | `status: "complete"`, all preferences met |
+| | `unmet` | `status: "complete_with_unmet_preferences"`, one `preference_unmet` item |
+| | `impossible` | `status: "impossible"`, empty timetable, one `no_room_big_enough` item |
+| `POST .../validate` | `clean` (default) | `{ "valid": true, "clashes": [] }` |
+| | `clashes` | `valid: false` with a `teacher_clash`, `room_clash` and `room_capacity` item |
+
+The scenario parameter exists **only in mock mode**. The real endpoints ignore it.
+Mock `generate` does not save the timetable, and mock `validate` ignores the
+timetable you send. The files are in `backend/fixtures/`:
+`sample_project.json`, `sample_project_impossible.json`, `generate_complete.json`,
+`generate_unmet_preferences.json`, `generate_impossible.json`, `validate_clean.json`,
+`validate_clashes.json`. The frontend copies them into `frontend/mocks/`.
+
+## Example: a generate result (complete with unmet preferences)
 
 ```json
 {
@@ -120,8 +169,8 @@ arrive in Phase 1. The frontend copies them into `frontend/mocks/`.
   ],
   "unmet_constraints": [
     { "type": "preference_unmet",
-      "message": "Dr. Sharma prefers Monday morning, but one of Data Structures' classes is on Tuesday.",
-      "suggested_fix": "Add more Monday morning slots or relax this preference.",
+      "message": "Dr. Sharma prefers Monday 09:00-11:00, but one of Data Structures' classes is on Tuesday.",
+      "suggested_fix": "Add more Monday morning slots, or relax this preference.",
       "affected_entry_ids": ["E2"], "affected_slot_ids": ["TUE_09"] }
   ],
   "preferences_met": 0,

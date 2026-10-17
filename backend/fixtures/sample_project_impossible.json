@@ -1,0 +1,114 @@
+{
+  "id": "demo-impossible",
+  "name": "Demo project (impossible)",
+  "data": {
+    "courses": [
+      {
+        "id": "C1",
+        "code": "CS101",
+        "name": "Data Structures",
+        "faculty_id": "F1",
+        "student_count": 55,
+        "sessions_per_week": 2,
+        "session_length_slots": 1
+      },
+      {
+        "id": "C2",
+        "code": "CS102",
+        "name": "Algorithms Lab",
+        "faculty_id": "F2",
+        "student_count": 28,
+        "sessions_per_week": 1,
+        "session_length_slots": 2
+      }
+    ],
+    "faculty": [
+      {
+        "id": "F1",
+        "name": "Dr. Sharma",
+        "preferred_slot_ids": [
+          "MON_09",
+          "MON_10"
+        ]
+      },
+      {
+        "id": "F2",
+        "name": "Prof. Rao",
+        "preferred_slot_ids": []
+      }
+    ],
+    "rooms": [
+      {
+        "id": "R101",
+        "name": "Lecture Hall 1",
+        "capacity": 40
+      },
+      {
+        "id": "R102",
+        "name": "Lab 2",
+        "capacity": 30
+      }
+    ],
+    "slots": [
+      {
+        "id": "MON_09",
+        "day": "Mon",
+        "start": "09:00",
+        "end": "10:00",
+        "label": "Mon 09:00-10:00"
+      },
+      {
+        "id": "MON_10",
+        "day": "Mon",
+        "start": "10:00",
+        "end": "11:00",
+        "label": "Mon 10:00-11:00"
+      },
+      {
+        "id": "MON_11",
+        "day": "Mon",
+        "start": "11:00",
+        "end": "12:00",
+        "label": "Mon 11:00-12:00"
+      },
+      {
+        "id": "TUE_09",
+        "day": "Tue",
+        "start": "09:00",
+        "end": "10:00",
+        "label": "Tue 09:00-10:00"
+      },
+      {
+        "id": "TUE_10",
+        "day": "Tue",
+        "start": "10:00",
+        "end": "11:00",
+        "label": "Tue 10:00-11:00"
+      },
+      {
+        "id": "TUE_11",
+        "day": "Tue",
+        "start": "11:00",
+        "end": "12:00",
+        "label": "Tue 11:00-12:00"
+      }
+    ]
+  },
+  "constraints": {
+    "no_teacher_clash": true,
+    "no_room_clash": true,
+    "room_capacity": true,
+    "preferences": [
+      {
+        "id": "P1",
+        "type": "faculty_prefers_slots",
+        "faculty_id": "F1",
+        "slot_ids": [
+          "MON_09",
+          "MON_10"
+        ]
+      }
+    ]
+  },
+  "timetable": []
+}
