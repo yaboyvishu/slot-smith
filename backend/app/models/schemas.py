@@ -7,7 +7,7 @@ Rules (see /docs/api-contract.md):
 """
 from typing import Annotated, Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
 Day = Literal["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 HHMM = Annotated[str, StringConstraints(pattern=r"^([01]\d|2[0-3]):[0-5]\d$")]
@@ -55,6 +55,13 @@ class TimeSlot(ApiModel):
     end: HHMM
     label: str = ""
 
+    @model_validator(mode="after")
+    def _end_after_start(self):
+        # "HH:MM" strings compare correctly as text
+        if self.end <= self.start:
+            raise ValueError(f"slot {self.id}: end must be later than start")
+        return self
+
 
 class Course(ApiModel):
     id: str
@@ -71,6 +78,18 @@ class ProjectData(ApiModel):
     faculty: list[Faculty] = Field(default_factory=list)
     rooms: list[Room] = Field(default_factory=list)
     slots: list[TimeSlot] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _unique_ids(self):
+        # Duplicate ids would corrupt references. Dangling references (a course
+        # whose faculty_id does not exist yet) are allowed so users can save
+        # half-finished tables; generate reports those later.
+        for name in ("courses", "faculty", "rooms", "slots"):
+            ids = [item.id for item in getattr(self, name)]
+            dupes = sorted({i for i in ids if ids.count(i) > 1})
+            if dupes:
+                raise ValueError(f"duplicate ids in {name}: {', '.join(dupes)}")
+        return self
 
 
 # ---------- rules ----------
@@ -133,12 +152,29 @@ class Project(ApiModel):
     timetable: list[TimetableEntry] = Field(default_factory=list)
 
 
+def _check_unique_entry_ids(entries: list[TimetableEntry]) -> None:
+    ids = [e.id for e in entries]
+    dupes = sorted({i for i in ids if ids.count(i) > 1})
+    if dupes:
+        raise ValueError(f"duplicate timetable entry ids: {', '.join(dupes)}")
+
+
 class TimetableUpdate(ApiModel):
     timetable: list[TimetableEntry]
+
+    @model_validator(mode="after")
+    def _unique_entry_ids(self):
+        _check_unique_entry_ids(self.timetable)
+        return self
 
 
 class ValidateRequest(ApiModel):
     timetable: list[TimetableEntry]
+
+    @model_validator(mode="after")
+    def _unique_entry_ids(self):
+        _check_unique_entry_ids(self.timetable)
+        return self
 
 
 class ValidateResponse(ApiModel):

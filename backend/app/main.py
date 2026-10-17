@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app import config
-from app.routes import health
+from app.routes import health, projects
 
 app = FastAPI(
     title="Auto Timetable Scheduler API",
@@ -23,6 +23,7 @@ app.add_middleware(
 )
 
 app.include_router(health.router, prefix="/api")
+app.include_router(projects.router, prefix="/api")
 
 
 # ---- one error format for every failure ----
@@ -41,6 +42,7 @@ _HTTP_CODES = {
     405: "METHOD_NOT_ALLOWED",
     409: "CONFLICT",
     422: "VALIDATION_ERROR",
+    501: "NOT_IMPLEMENTED",
 }
 
 
