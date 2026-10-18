@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import CatIllustration from "./CatIllustration";
 import {
   ApiError,
   createProject,
@@ -959,58 +958,53 @@ export default function DataSetup() {
 
   return (
     <section className="space-y-6">
-      <div className="grid min-w-0 grid-cols-1 items-center gap-6 md:grid-cols-[minmax(0,1fr)_minmax(20rem,0.95fr)] md:gap-10">
-        <div className="min-w-0 space-y-6">
-          <header>
-            <p className="text-sm font-semibold uppercase tracking-wide text-[var(--brand-accent)]">
-              Phase 1 · Data setup
-            </p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-[var(--brand-accent)]">
-              Project data
-            </h1>
-            <p className="mt-3 max-w-3xl leading-7 text-[var(--brand-accent)]">
-              Create a project, then add the courses, faculty, rooms, and
-              time slots used by the scheduler. Changes are saved when you choose
-              “Save project data”.
-            </p>
-          </header>
+      <header>
+        <p className="text-sm font-semibold uppercase tracking-wide text-[var(--brand-accent)]">
+          Phase 1 · Data setup
+        </p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-[var(--brand-accent)]">
+          Project data
+        </h1>
+        <p className="mt-3 max-w-3xl leading-7 text-[var(--brand-accent)]">
+          Create a project, then add the courses, faculty, rooms, and
+          time slots used by the scheduler. Changes are saved when you choose
+          “Save project data”.
+        </p>
+      </header>
 
-          {!project && (
-            <form
-              onSubmit={handleCreateProject}
-              className="w-full max-w-2xl rounded-2xl border border-slate-300 bg-[var(--panel-background)] p-6 text-slate-950 shadow-lg sm:p-8"
-            >
-              <h2 className="text-lg font-semibold text-slate-950">Start a project</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                Enter a name. The app will create the project and load its data
-                through the API.
-              </p>
-              <label
-                htmlFor="project-name"
-                className="mt-5 block text-sm font-medium text-slate-800"
-              >
-                Project name
-              </label>
-              <input
-                id="project-name"
-                name="name"
-                required
-                value={projectName}
-                onChange={(event) => setProjectName(event.target.value)}
-                className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-slate-900 outline-none focus-visible:border-[#8a204f] focus-visible:ring-2 focus-visible:ring-[#f8c8dc]"
-              />
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="mt-5 min-h-11 rounded-lg bg-[#f8c8dc] px-5 font-semibold text-[#111111] transition hover:bg-[#f3a9c9] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f8c8dc] disabled:cursor-wait disabled:opacity-60"
-              >
-                {isLoading ? "Creating project…" : "Create project"}
-              </button>
-            </form>
-          )}
-        </div>
-        <CatIllustration size="hero" />
-      </div>
+      {!project && (
+        <form
+          onSubmit={handleCreateProject}
+          className="w-full max-w-2xl rounded-2xl border border-slate-300 bg-[var(--panel-background)] p-6 text-slate-950 shadow-lg sm:p-8"
+        >
+          <h2 className="text-lg font-semibold text-slate-950">Start a project</h2>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            Enter a name. The app will create the project and load its data
+            through the API.
+          </p>
+          <label
+            htmlFor="project-name"
+            className="mt-5 block text-sm font-medium text-slate-800"
+          >
+            Project name
+          </label>
+          <input
+            id="project-name"
+            name="name"
+            required
+            value={projectName}
+            onChange={(event) => setProjectName(event.target.value)}
+            className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-slate-900 outline-none focus-visible:border-[#8a204f] focus-visible:ring-2 focus-visible:ring-[#f8c8dc]"
+          />
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="mt-5 min-h-11 rounded-lg bg-[#f8c8dc] px-5 font-semibold text-[#111111] transition hover:bg-[#f3a9c9] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f8c8dc] disabled:cursor-wait disabled:opacity-60"
+          >
+            {isLoading ? "Creating project…" : "Create project"}
+          </button>
+        </form>
+      )}
 
       {isLoading && (
         <p role="status" className="rounded-lg bg-blue-50 p-4 text-sm text-blue-900">

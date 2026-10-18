@@ -151,7 +151,7 @@ export default function Navigation() {
               >
                 SlotSmith
               </Link>
-              <CatIllustration size="logo" />
+              <CatIllustration />
             </div>
             <div className="flex min-w-0 items-center justify-end gap-1 sm:gap-2">
               {userName ? (

@@ -1,10 +1,5 @@
-import ScreenPlaceholder from "../../components/ScreenPlaceholder";
+import ExportManager from "../../components/ExportManager";
 
 export default function ExportPage() {
-  return (
-    <ScreenPlaceholder
-      title="Export"
-      description="Download a completed timetable as a PDF or ICS calendar file."
-    />
-  );
+  return <ExportManager />;
 }
