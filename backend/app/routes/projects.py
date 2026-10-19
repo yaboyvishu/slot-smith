@@ -1,9 +1,10 @@
 """Project endpoints. Handlers stay thin: parsing, storage calls, and mock mode only.
 
-Phase 1 status:
-  real:        create/get project, save data, save constraints, save timetable
-  mock only:   generate (Phase 2), validate (Phase 5)  -> 501 when MOCK is off
-  not yet:     export pdf/ics (Phase 6)                 -> 501
+Status:
+  real:        create/get project, save data, save constraints, save timetable,
+               generate (Phase 2)
+  mock only:   validate (Phase 5)  -> 501 when MOCK is off
+  not yet:     export pdf/ics (Phase 6) -> 501
 """
 from fastapi import APIRouter, HTTPException
 
@@ -79,11 +80,28 @@ def save_timetable(project_id: str, body: TimetableUpdate) -> Project:
 
 @router.post("/{project_id}/generate", response_model=GenerateResult)
 def generate(project_id: str, scenario: str | None = None) -> GenerateResult:
-    _load_or_404(project_id)
+    project = _load_or_404(project_id)
     if config.mock_mode():
         filename = _pick_scenario(fixtures.GENERATE_SCENARIOS, scenario)
         return GenerateResult.model_validate(fixtures.load_fixture(filename))
-    raise _not_implemented("Generate", "Phase 2")
+
+    from app.services import generator  # imported late so mock mode and startup stay light
+
+    try:
+        result = generator.generate(project)
+    except generator.SolverTimeout:
+        raise HTTPException(
+            status_code=504,
+            detail=(
+                f"The solver ran out of time ({config.solver_time_limit():g} seconds). "
+                "Try fewer sessions per week, or add more rooms and time slots."
+            ),
+        )
+
+    # The generated timetable becomes the project's saved timetable (an impossible
+    # result clears it). Any manual edits made earlier are replaced.
+    storage.update_project(project_id, lambda p: setattr(p, "timetable", result.timetable))
+    return result
 
 
 @router.post("/{project_id}/validate", response_model=ValidateResponse)

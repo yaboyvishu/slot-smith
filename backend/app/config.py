@@ -19,3 +19,19 @@ def mock_mode() -> bool:
 
 def data_dir() -> str:
     return os.getenv("DATA_DIR", "data")
+
+
+def solver_time_limit() -> float:
+    """Seconds the solver may run before generate gives up (HTTP 504)."""
+    try:
+        return float(os.getenv("SOLVER_TIME_LIMIT", "10"))
+    except ValueError:
+        return 10.0
+
+
+def solver_workers() -> int:
+    """CP-SAT search threads. Use 1 on very small hosts; 4 is a good laptop default."""
+    try:
+        return max(1, int(os.getenv("SOLVER_WORKERS", "4")))
+    except ValueError:
+        return 4

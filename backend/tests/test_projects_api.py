@@ -2,6 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.services import fixtures
 
 client = TestClient(app)
 
@@ -110,10 +111,51 @@ def test_save_timetable_slot_ids_may_be_omitted():
 
 # ---------- generate / validate: not built yet, mock mode only ----------
 
-def test_generate_is_501_without_mock_mode():
+def test_generate_impossible_project_matches_the_fixture_and_clears_the_timetable():
+    # needs no solver: the "no room big enough" check answers first
+    entry = {"id": "E1", "course_id": "C1", "faculty_id": "F1", "room_id": "R101",
+             "start_slot_id": "MON_09", "length_slots": 1}
+    client.put("/api/projects/demo-impossible/timetable", json={"timetable": [entry]})
+    r = client.post("/api/projects/demo-impossible/generate")
+    assert r.status_code == 200
+    assert r.json() == fixtures.load_fixture("generate_impossible.json")
+    assert client.get("/api/projects/demo-impossible").json()["timetable"] == []
+
+
+def test_generate_runs_the_real_solver_and_saves_the_timetable():
+    pytest.importorskip("ortools")
     r = client.post("/api/projects/demo/generate")
-    assert r.status_code == 501
-    assert r.json()["error"]["code"] == "NOT_IMPLEMENTED"
+    assert r.status_code == 200
+    body = r.json()
+    assert body["status"] in ("complete", "complete_with_unmet_preferences")
+    assert len(body["timetable"]) == 3
+    assert client.get("/api/projects/demo").json()["timetable"] == body["timetable"]
+
+
+def test_generate_on_a_missing_project_is_404():
+    assert client.post("/api/projects/nope/generate").status_code == 404
+
+
+def test_generate_timeout_is_504(monkeypatch):
+    from app.services import generator
+
+    def too_slow(project, *args, **kwargs):
+        raise generator.SolverTimeout()
+
+    monkeypatch.setattr(generator, "generate", too_slow)
+    r = client.post("/api/projects/demo/generate")
+    assert r.status_code == 504
+    assert r.json()["error"]["code"] == "SOLVER_TIMEOUT"
+    assert "ran out of time" in r.json()["error"]["message"]
+
+
+def test_blank_id_is_rejected_with_the_field_in_the_details():
+    p = new_project()
+    bad = {"rooms": [{"id": "", "name": "Hall", "capacity": 10}]}
+    r = client.put(f"/api/projects/{p['id']}/data", json=bad)
+    assert r.status_code == 422
+    fields = [d["field"] for d in r.json()["error"]["details"]]
+    assert any(f.endswith("rooms.0.id") for f in fields)
 
 
 def test_validate_is_501_without_mock_mode():
