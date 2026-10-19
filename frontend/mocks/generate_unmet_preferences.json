@@ -39,8 +39,8 @@
   "unmet_constraints": [
     {
       "type": "preference_unmet",
-      "message": "Dr. Sharma prefers Monday 09:00-11:00, but one of Data Structures' classes is on Tuesday.",
-      "suggested_fix": "Add more Monday morning slots, or relax this preference.",
+      "message": "Dr. Sharma prefers Mon 09:00-10:00 and Mon 10:00-11:00, but 1 of their 2 classes is placed outside those slots.",
+      "suggested_fix": "Add more of their preferred slots or rooms, or relax this preference.",
       "affected_entry_ids": [
         "E2"
       ],
