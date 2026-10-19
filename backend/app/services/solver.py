@@ -13,7 +13,18 @@ Hard rules (Phase 2):
   - a room is never double-booked             (if constraints.no_room_clash)
 (Two sessions of one course can never overlap while the teacher rule is on, because a
 course has exactly one teacher. These are the same rules rules.find_clashes checks.)
-Teacher preferences are NOT optimised yet (Phase 3); they are only counted afterwards.
+
+Teacher preferences (Phase 3) are a SOFT goal: they never override a hard rule, the solver
+just tries to meet as many as it can. Each teacher who has preferred slots gets one yes/no
+variable "preference met"; it may be 1 only if every session of every course they teach
+sits entirely inside their preferred slots (the same rule rules.preference_stats counts).
+The objective maximises
+    BIG * (number of teachers met)  +  (number of sessions placed inside a preferred set)
+where BIG is larger than the second term can ever be, so "teachers met" always wins and
+the second term only breaks ties (a teacher who cannot be fully satisfied still gets as
+many classes as possible in their slots).
+If the time limit hits after a valid timetable was found, the best one found so far is
+returned (it is still 100% rule-clean, just maybe not the best possible).
 
 This module imports OR-Tools, which is large, so the app only imports it when
 generate is actually called.
@@ -37,6 +48,11 @@ def solve(
     slot_index = {s.id: i for i, s in enumerate(ordered_slots)}
 
     model = cp_model.CpModel()
+
+    # Phase 3: who has preferences, and which slots they like.
+    wanted = rules.preferred_slots_by_teacher(data, constraints)
+    inside_terms: list = []  # placement variables that sit fully inside a preferred set
+    teacher_outside: dict[str, list] = defaultdict(list)  # placements that break a teacher's preference
 
     # Every placement option, remembered so the answer can be read back afterwards.
     # (variable, course, start slot id, room id, slot ids occupied)
@@ -71,6 +87,12 @@ def solve(
                     placements.append((var, course, start_id, room.id, run))
                     options.append(var)
                     start_position_terms.append(slot_index[start_id] * var)
+                    liked = wanted.get(course.faculty_id)
+                    if liked is not None:
+                        if set(run) <= liked:
+                            inside_terms.append(var)
+                        else:
+                            teacher_outside[course.faculty_id].append(var)
                     for sid in run:
                         teacher_cell[(course.faculty_id, sid)].append(var)
                         room_cell[(room.id, sid)].append(var)
@@ -101,6 +123,21 @@ def solve(
             if len(variables) > 1:
                 model.AddAtMostOne(variables)
 
+    # Preference objective. Only teachers who actually teach something matter: a teacher
+    # with no classes is "met" automatically and is the same for every timetable.
+    met_vars: dict[str, object] = {}
+    for fid in wanted:
+        if not any(c.faculty_id == fid for c in data.courses):
+            continue
+        met = model.NewBoolVar(f"met_{fid}")
+        met_vars[fid] = met
+        for var in teacher_outside[fid]:
+            model.Add(var + met <= 1)  # a placement outside the preferred set => not met
+    if met_vars:
+        sessions_total = sum(c.sessions_per_week for c in data.courses)
+        big = sessions_total + 1
+        model.Maximize(big * sum(met_vars.values()) + sum(inside_terms))
+
     solver = cp_model.CpSolver()
     solver.parameters.max_time_in_seconds = (
         time_limit_seconds if time_limit_seconds is not None else config.solver_time_limit()
@@ -117,6 +154,7 @@ def solve(
             raise RuntimeError("The solver rejected the model as invalid (this is a bug).")
         return SolveOutcome(status="timeout")
 
+    claimed_met = sum(1 for m in met_vars.values() if solver.BooleanValue(m))
     chosen = [p for p in placements if solver.BooleanValue(p[0])]
     # Stable, readable order: by day and time, then room, then course.
     chosen.sort(key=lambda p: (slot_index[p[2]], p[3], p[1].code, p[1].id))
@@ -132,4 +170,4 @@ def solve(
         )
         for n, (_, course, start_id, room_id, run) in enumerate(chosen, start=1)
     ]
-    return SolveOutcome(status="solved", entries=entries)
+    return SolveOutcome(status="solved", entries=entries, preferences_met=claimed_met)

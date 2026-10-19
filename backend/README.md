@@ -41,8 +41,13 @@ list are in the contract.
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `SOLVER_TIME_LIMIT` | `10` | seconds before `generate` gives up (HTTP 504 `SOLVER_TIMEOUT`) |
+| `SOLVER_TIME_LIMIT` | `10` | seconds `generate` may search; the best timetable found so far is returned, and only if none was found it gives up (HTTP 504 `SOLVER_TIMEOUT`) |
 | `SOLVER_WORKERS` | `4` | solver threads; use `1` on a very small host |
+
+**Preferences (Phase 3).** The solver tries to meet as many teachers' preferred slots as it
+can, but never breaks a hard rule. With several workers, two runs may give different (equally
+good) timetables with the same `preferences_met`. For a repeatable timetable during a demo, set
+`SOLVER_WORKERS=1` (slower on big projects).
 
 `generate` works on the saved project, so save the data first (`PUT .../data`), then
 `POST .../generate`. Try it on the built-in projects:

@@ -1,7 +1,7 @@
 """generate() without OR-Tools: the solver is replaced by a fake."""
 import pytest
 
-from builders import course, hour_slots, project, room, teacher
+from builders import course, entry, hour_slots, project, room, teacher
 from app.models.schemas import Constraints, GenerateResult, Project
 from app.services import fixtures, generator
 from app.services.solve_types import SolveOutcome
@@ -121,3 +121,29 @@ def test_time_limit_is_passed_to_the_solver():
         return SolveOutcome(status="infeasible")
     generator.generate(sample(), time_limit=3.5, solve_fn=spy)
     assert seen == [3.5]
+
+
+# ---- Phase 3: the solver's own preference tally is only a sanity check ----
+
+def liked_project():
+    # F1 likes MON_10 only; the fake timetable puts the class there, so 1 of 1 is really met.
+    return project(courses=[course("A")], faculty=[teacher("F1", ["MON_10"])], slots=SLOTS)
+
+
+def test_solver_under_counting_preferences_is_fine():
+    outcome = SolveOutcome(status="solved", entries=[entry("E1", "A", "R1", "MON_10")], preferences_met=0)
+    result = generator.generate(liked_project(), solve_fn=fake(outcome))
+    assert (result.preferences_met, result.preferences_total) == (1, 1)  # the recount is authoritative
+
+
+def test_solver_over_claiming_preferences_is_a_bug():
+    outcome = SolveOutcome(status="solved", entries=[entry("E1", "A", "R1", "MON_09")], preferences_met=1)
+    with pytest.raises(generator.SolverBug):
+        generator.generate(liked_project(), solve_fn=fake(outcome))
+
+
+def test_teachers_with_no_classes_do_not_trigger_the_bug_check():
+    proj = project(courses=[course("A")], faculty=[teacher("F1", ["MON_09"]), teacher("IDLE", ["MON_09"])], slots=SLOTS)
+    outcome = SolveOutcome(status="solved", entries=[entry("E1", "A", "R1", "MON_09")], preferences_met=1)
+    result = generator.generate(proj, solve_fn=fake(outcome))
+    assert (result.preferences_met, result.preferences_total) == (2, 2)
