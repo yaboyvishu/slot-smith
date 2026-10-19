@@ -163,6 +163,17 @@ def generate(
         raise SolverBug("; ".join(c.message for c in clashes))
 
     met, total, unmet = rules.preference_stats(data, constraints, entries)
+    # The solver's own tally may only UNDER-count (a teacher can be met by luck while the
+    # solver's flag says 0). Counting more than reality would mean the model is wrong.
+    if outcome.preferences_met is not None:
+        never_taught = total - sum(
+            1 for fid in rules.preferred_slots_by_teacher(data, constraints)
+            if any(c.faculty_id == fid for c in data.courses)
+        )
+        if outcome.preferences_met + never_taught > met:
+            raise SolverBug(
+                f"the solver claims {outcome.preferences_met} preferences met but only {met} are"
+            )
     return GenerateResult(
         status="complete_with_unmet_preferences" if unmet else "complete",
         timetable=entries,

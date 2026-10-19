@@ -73,8 +73,15 @@ Counting rule (frozen here so the numbers in the UI are predictable):
   teach is placed in one of their preferred slots. `preferences_met` counts those.
 - Each unmet teacher produces one `preference_unmet` item in `unmet_constraints`.
 - An `impossible` result always has `preferences_met = 0` and `preferences_total = 0`.
-- Phase 2 only *counts* preferences after the timetable is built. Phase 3 will make the solver
-  try to meet them, so the numbers can improve later but their meaning does not change.
+- Since Phase 3 the solver **optimises** preferences: it maximises the number of met teachers
+  (and, as a tie-breaker, the number of classes that sit in a preferred slot), but never at
+  the cost of a hard rule. `preferences_met` is always recounted from the final timetable
+  using the rule above. Response shapes did not change.
+- If the time limit runs out after a valid timetable was found, `generate` returns the best
+  one found so far (still rule-clean, maybe not the best possible). `504 SOLVER_TIMEOUT`
+  only happens when no valid timetable was found in time.
+- Equally good timetables may differ between runs (the solver searches in parallel); the
+  `preferences_met` score is the same.
 
 ### Enums
 
@@ -131,7 +138,7 @@ Notes:
 | Endpoint | Status |
 |---|---|
 | health, create/get project, save data, save constraints, save timetable | **real** |
-| `generate` | **real** (Phase 2): hard rules and multi-slot classes. Preferences are counted, not yet optimised (Phase 3). `?scenario=` still works in mock mode |
+| `generate` | **real** (Phase 2 and 3): hard rules and multi-slot classes. Teacher preferences are optimised (Phase 3). `?scenario=` still works in mock mode |
 | `validate` | mock only (`MOCK=1`), real in Phase 5. Otherwise 501 |
 | `export/pdf`, `export/ics` | 501 until Phase 6 |
 | `import` | not built (stretch) |
