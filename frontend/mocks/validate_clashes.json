@@ -1,0 +1,40 @@
+{
+  "valid": false,
+  "clashes": [
+    {
+      "type": "teacher_clash",
+      "message": "Dr. Sharma is teaching two classes at Mon 09:00-10:00: Data Structures (twice).",
+      "suggested_fix": "Move one of the Data Structures classes to a different time.",
+      "affected_entry_ids": [
+        "E1",
+        "E2"
+      ],
+      "affected_slot_ids": [
+        "MON_09"
+      ]
+    },
+    {
+      "type": "room_clash",
+      "message": "Lab 2 is booked twice at Mon 09:00-10:00: Data Structures and Algorithms Lab.",
+      "suggested_fix": "Move one of the classes to another room or time.",
+      "affected_entry_ids": [
+        "E1",
+        "E3"
+      ],
+      "affected_slot_ids": [
+        "MON_09"
+      ]
+    },
+    {
+      "type": "room_capacity",
+      "message": "Data Structures has 55 students, but Lab 2 only seats 30.",
+      "suggested_fix": "Move Data Structures to Lecture Hall 1 (60 seats).",
+      "affected_entry_ids": [
+        "E1"
+      ],
+      "affected_slot_ids": [
+        "MON_09"
+      ]
+    }
+  ]
+}

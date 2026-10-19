@@ -1,4 +1,4 @@
-# API Contract (v0.2, DRAFT until the team confirms)
+# API Contract (v0.3, DRAFT until the team confirms)
 
 Source of truth for the frontend and backend. The Pydantic models in
 `backend/app/models/schemas.py` implement exactly this file. If you need a
@@ -15,6 +15,7 @@ removing, or changing a type) are announced to the whole team.
 | Days | `"Mon" "Tue" "Wed" "Thu" "Fri" "Sat"` |
 | Base URL | `NEXT_PUBLIC_API_URL` (local: `http://localhost:8000`). All routes start with `/api` |
 | Requests | unknown fields are rejected (422) |
+| Ids | an object's own `id` (course, teacher, room, slot, preference, timetable entry) must not be blank (422). References such as `Course.faculty_id` may be blank while a user is still filling in tables |
 | Interactive docs | `GET /docs` (FastAPI) |
 
 ### Errors (every failure uses this shape)
@@ -26,7 +27,8 @@ removing, or changing a type) are announced to the whole team.
 
 Codes: `VALIDATION_ERROR` (422), `BAD_REQUEST` (400), `NOT_FOUND` (404),
 `METHOD_NOT_ALLOWED` (405), `CONFLICT` (409), `INTERNAL_ERROR` (500),
-`NOT_IMPLEMENTED` (501, a feature that is planned but not built yet).
+`NOT_IMPLEMENTED` (501, a feature that is planned but not built yet),
+`SOLVER_TIMEOUT` (504, `generate` ran out of time without an answer).
 
 ## Data shapes
 
@@ -70,6 +72,9 @@ Counting rule (frozen here so the numbers in the UI are predictable):
 - A teacher's preference is **met** when *every* class session of every course they
   teach is placed in one of their preferred slots. `preferences_met` counts those.
 - Each unmet teacher produces one `preference_unmet` item in `unmet_constraints`.
+- An `impossible` result always has `preferences_met = 0` and `preferences_total = 0`.
+- Phase 2 only *counts* preferences after the timetable is built. Phase 3 will make the solver
+  try to meet them, so the numbers can improve later but their meaning does not change.
 
 ### Enums
 
@@ -99,6 +104,14 @@ Notes:
 - `generate` always returns **200** with a `GenerateResult`, including when the
   status is `"impossible"` (that is a normal result, not an error). When impossible,
   `timetable` is `[]` and `unmet_constraints` explains why.
+- `generate` saves its timetable as the project's timetable (an impossible result clears it),
+  replacing any manual edits. If the solver runs out of time (default 10 s) the response is
+  **504** `SOLVER_TIMEOUT`, which is an error, not a result.
+- Before solving, `generate` checks for problems it can name directly and returns them all at
+  once as `impossible`: `missing_reference` (a course with a blank or unknown teacher),
+  `no_room_big_enough`, `not_enough_slots` (no slots at all), `no_consecutive_block`.
+  If the solver itself finds no solution the result has one `blocking_rules` item.
+  (Phase 4 will make that item say *which* rules clash.)
 - `validate` does not save anything. It checks the timetable against the project's
   current data and constraints using the same rules the solver uses.
 - `PUT .../data` and `PUT .../constraints` replace the stored value. Half-finished
@@ -117,8 +130,8 @@ Notes:
 
 | Endpoint | Status |
 |---|---|
-| health, create/get project, save data, save constraints, save timetable | **real** (Phase 1) |
-| `generate` | mock only (`MOCK=1`), real in Phase 2. Otherwise 501 `NOT_IMPLEMENTED` |
+| health, create/get project, save data, save constraints, save timetable | **real** |
+| `generate` | **real** (Phase 2): hard rules and multi-slot classes. Preferences are counted, not yet optimised (Phase 3). `?scenario=` still works in mock mode |
 | `validate` | mock only (`MOCK=1`), real in Phase 5. Otherwise 501 |
 | `export/pdf`, `export/ics` | 501 until Phase 6 |
 | `import` | not built (stretch) |
@@ -149,7 +162,9 @@ Pick the response with the `scenario` query parameter (unknown value: 400):
 
 The scenario parameter exists **only in mock mode**. The real endpoints ignore it.
 Mock `generate` does not save the timetable, and mock `validate` ignores the
-timetable you send. The files are in `backend/fixtures/`:
+timetable you send. The mock answers are exactly what the real code returns for the
+`demo` / `demo-impossible` projects (the backend tests check this), so switching mock
+mode off should not change what the screens show for those two projects. The files are in `backend/fixtures/`:
 `sample_project.json`, `sample_project_impossible.json`, `generate_complete.json`,
 `generate_unmet_preferences.json`, `generate_impossible.json`, `validate_clean.json`,
 `validate_clashes.json`. The frontend copies them into `frontend/mocks/`.

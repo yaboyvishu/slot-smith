@@ -11,6 +11,9 @@ from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_vali
 
 Day = Literal["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 HHMM = Annotated[str, StringConstraints(pattern=r"^([01]\d|2[0-3]):[0-5]\d$")]
+# An object's own id must not be blank. (References such as Course.faculty_id may be
+# blank while a user is still filling in tables; generate reports those.)
+Id = Annotated[str, StringConstraints(min_length=1)]
 
 ResultStatus = Literal["complete", "complete_with_unmet_preferences", "impossible"]
 
@@ -37,19 +40,19 @@ class ApiModel(BaseModel):
 # ---------- input data ----------
 
 class Faculty(ApiModel):
-    id: str
+    id: Id
     name: str
     preferred_slot_ids: list[str] = Field(default_factory=list)
 
 
 class Room(ApiModel):
-    id: str
+    id: Id
     name: str
     capacity: int = Field(ge=1)
 
 
 class TimeSlot(ApiModel):
-    id: str
+    id: Id
     day: Day
     start: HHMM
     end: HHMM
@@ -64,7 +67,7 @@ class TimeSlot(ApiModel):
 
 
 class Course(ApiModel):
-    id: str
+    id: Id
     code: str
     name: str
     faculty_id: str
@@ -95,7 +98,7 @@ class ProjectData(ApiModel):
 # ---------- rules ----------
 
 class Preference(ApiModel):
-    id: str
+    id: Id
     type: Literal["faculty_prefers_slots"]
     faculty_id: str
     slot_ids: list[str]
@@ -111,7 +114,7 @@ class Constraints(ApiModel):
 # ---------- timetable ----------
 
 class TimetableEntry(ApiModel):
-    id: str
+    id: Id
     course_id: str
     faculty_id: str
     room_id: str

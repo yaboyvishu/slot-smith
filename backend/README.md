@@ -37,6 +37,21 @@ curl -X POST "http://localhost:8000/api/projects/demo/validate?scenario=clashes"
 The projects `demo` and `demo-impossible` always exist. Details and the full scenario
 list are in the contract.
 
+## Solver settings
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `SOLVER_TIME_LIMIT` | `10` | seconds before `generate` gives up (HTTP 504 `SOLVER_TIMEOUT`) |
+| `SOLVER_WORKERS` | `4` | solver threads; use `1` on a very small host |
+
+`generate` works on the saved project, so save the data first (`PUT .../data`), then
+`POST .../generate`. Try it on the built-in projects:
+
+```bash
+curl -X POST http://localhost:8000/api/projects/demo/generate              # a real timetable
+curl -X POST http://localhost:8000/api/projects/demo-impossible/generate   # explains why not
+```
+
 ## Where things live
 
 | Folder / file | What it does |
@@ -44,7 +59,9 @@ list are in the contract.
 | `app/main.py` | app, CORS, error format |
 | `app/routes/` | thin endpoint handlers |
 | `app/models/schemas.py` | the data shapes (= the contract in code) |
-| `app/services/rules.py` | shared rules (slot adjacency now; clash checks in Phase 5) |
+| `app/services/rules.py` | the shared rules: slot adjacency, clash detection, preference counting |
+| `app/services/solver.py` | the OR-Tools CP-SAT model |
+| `app/services/generator.py` | pre-checks, runs the solver, double-checks and scores the answer |
 | `app/services/storage.py` | saving projects as JSON files in `backend/data/` (git-ignored) |
 | `app/services/fixtures.py` | loads `fixtures/` for mock mode and the demo projects |
 | `fixtures/` | canned JSON the frontend can copy into its mocks |

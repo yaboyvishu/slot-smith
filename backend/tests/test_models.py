@@ -69,3 +69,24 @@ def test_duplicate_timetable_entry_ids_are_rejected():
              "start_slot_id": "S", "length_slots": 1}
     with pytest.raises(ValidationError, match="duplicate timetable entry ids"):
         TimetableUpdate.model_validate({"timetable": [entry, entry]})
+
+
+@pytest.mark.parametrize("model,kwargs", [
+    (Room, {"name": "N", "capacity": 10}),
+    (TimeSlot, {"day": "Mon", "start": "09:00", "end": "10:00"}),
+])
+def test_blank_object_ids_are_rejected(model, kwargs):
+    with pytest.raises(ValidationError):
+        model(id="", **kwargs)
+
+
+def test_blank_ids_rejected_for_courses_and_teachers_too():
+    from app.models.schemas import Faculty
+    with pytest.raises(ValidationError):
+        Faculty(id="", name="N")
+    with pytest.raises(ValidationError):
+        Course(id="", code="X", name="N", faculty_id="F", student_count=1, sessions_per_week=1)
+
+
+def test_blank_reference_is_allowed_while_a_user_is_still_filling_in_tables():
+    Course(id="C", code="X", name="N", faculty_id="", student_count=1, sessions_per_week=1)
