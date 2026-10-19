@@ -96,10 +96,10 @@ The front end and the back end are separate. The browser talks to the API with J
 
 | Feature | Type | Status |
 |---|---|---|
-| Input courses, faculty, rooms, slots | Core | ☐ |
-| Constraints (clashes, capacity, preferences) | Core | ☐ |
-| Timetable generation with CP-SAT | Core | ☐ |
-| Explanation of unsatisfied constraints (Conflicts panel) | Core | ☐ |
+| Input courses, faculty, rooms, slots | Core | ✔ |
+| Constraints (clashes, capacity, preferences) | Core | ✔ |
+| Timetable generation with CP-SAT | Core | ✔ |
+| Explanation of unsatisfied constraints (Conflicts panel) | Core | ✔ |
 | Editable timetable grid with instant clash checking | Core | ☐ |
 | PDF export | Core | ☐ |
 | ICS export | Core | ☐ |
