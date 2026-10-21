@@ -42,6 +42,8 @@ def test_teacher_in_two_places():
     assert found[0].affected_entry_ids == ["E1", "E2"]
     assert found[0].affected_slot_ids == ["MON_09"]
     assert "two classes" in found[0].message and "Teacher F1" in found[0].message
+    assert "Course A to Mon 10:00-11:00" in found[0].suggested_fix
+    assert "Teacher F1" in found[0].suggested_fix and "Room R1" in found[0].suggested_fix
 
 
 def test_room_booked_twice():

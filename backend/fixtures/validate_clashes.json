@@ -4,7 +4,7 @@
     {
       "type": "teacher_clash",
       "message": "Dr. Sharma is teaching two classes at Mon 09:00-10:00: Data Structures (twice).",
-      "suggested_fix": "Move one of these classes to a different time.",
+      "suggested_fix": "Move Data Structures to Mon 10:00-11:00 in Lecture Hall 1, where Dr. Sharma and Lecture Hall 1 are both free.",
       "affected_entry_ids": [
         "E1",
         "E2"
@@ -16,7 +16,7 @@
     {
       "type": "room_clash",
       "message": "Lab 2 is booked twice at Mon 09:00-10:00: Data Structures and Algorithms Lab.",
-      "suggested_fix": "Move one of these classes to another room or time.",
+      "suggested_fix": "Move Data Structures to Mon 10:00-11:00 in Lecture Hall 1, where Dr. Sharma and Lecture Hall 1 are both free.",
       "affected_entry_ids": [
         "E1",
         "E3"

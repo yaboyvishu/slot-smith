@@ -109,7 +109,7 @@ def test_save_timetable_slot_ids_may_be_omitted():
     assert r.json()["timetable"][0]["slot_ids"] == ["MON_10"]
 
 
-# ---------- generate / validate: not built yet, mock mode only ----------
+# ---------- generate / validate ----------
 
 def test_generate_impossible_project_matches_the_fixture_and_clears_the_timetable():
     # needs no solver: the "no room big enough" check answers first
@@ -158,9 +158,84 @@ def test_blank_id_is_rejected_with_the_field_in_the_details():
     assert any(f.endswith("rooms.0.id") for f in fields)
 
 
-def test_validate_is_501_without_mock_mode():
+def test_validate_checks_the_submitted_timetable_without_saving_it():
+    project = new_project()
+    client.put(f"/api/projects/{project['id']}/data", json={
+        "courses": [{"id": "C1", "code": "C1", "name": "Algorithms", "faculty_id": "F1",
+                     "student_count": 20, "sessions_per_week": 1}],
+        "faculty": [{"id": "F1", "name": "Dr. Sharma"}],
+        "rooms": [ROOM],
+        "slots": SLOTS,
+    })
+    entry = {"id": "E1", "course_id": "C1", "faculty_id": "F1", "room_id": "R1",
+             "start_slot_id": "MON_09", "length_slots": 1, "slot_ids": ["MON_10"]}
+    response = client.post(f"/api/projects/{project['id']}/validate", json={"timetable": [entry]})
+    assert response.status_code == 200
+    assert response.json() == {"valid": True, "clashes": []}
+    assert client.get(f"/api/projects/{project['id']}").json()["timetable"] == []
+
+
+def test_validate_reports_conflicts_and_recomputes_stale_slots():
+    project = new_project()
+    client.put(f"/api/projects/{project['id']}/data", json={
+        "courses": [
+            {"id": "C1", "code": "C1", "name": "Algorithms", "faculty_id": "F1", "student_count": 20, "sessions_per_week": 1},
+            {"id": "C2", "code": "Databases", "faculty_id": "F1", "name": "Databases", "student_count": 20, "sessions_per_week": 1},
+        ],
+        "faculty": [{"id": "F1", "name": "Dr. Sharma"}],
+        "rooms": [ROOM], "slots": SLOTS,
+    })
+    entries = [
+        {"id": "E1", "course_id": "C1", "faculty_id": "F1", "room_id": "R1", "start_slot_id": "MON_09", "length_slots": 1, "slot_ids": ["MON_10"]},
+        {"id": "E2", "course_id": "C2", "faculty_id": "F1", "room_id": "R1", "start_slot_id": "MON_09", "length_slots": 1, "slot_ids": ["MON_10"]},
+    ]
+    response = client.post(f"/api/projects/{project['id']}/validate", json={"timetable": entries})
+    assert response.status_code == 200
+    body = response.json()
+    assert body["valid"] is False
+    assert {clash["type"] for clash in body["clashes"]} == {"teacher_clash", "room_clash"}
+    assert all(clash["affected_slot_ids"] == ["MON_09"] for clash in body["clashes"])
+
+
+def test_validate_unknown_project_is_404():
+    r = client.post("/api/projects/nope/validate", json={"timetable": []})
+    assert r.status_code == 404
+
+
+def test_validate_reports_unknown_references():
+    project = new_project()
+    entry = {"id": "E1", "course_id": "missing-course", "faculty_id": "missing-teacher",
+             "room_id": "missing-room", "start_slot_id": "missing-slot", "length_slots": 1}
+    response = client.post(f"/api/projects/{project['id']}/validate", json={"timetable": [entry]})
+    assert response.status_code == 200
+    assert response.json()["clashes"][0]["type"] == "missing_reference"
+
+
+def test_validate_reports_multi_slot_clash_in_second_slot():
+    project = new_project()
+    data = {
+        "courses": [
+            {"id": "C1", "code": "C1", "name": "Lab", "faculty_id": "F1", "student_count": 20, "sessions_per_week": 1, "session_length_slots": 2},
+            {"id": "C2", "code": "C2", "name": "Lecture", "faculty_id": "F2", "student_count": 20, "sessions_per_week": 1},
+        ],
+        "faculty": [{"id": "F1", "name": "Dr. Sharma"}, {"id": "F2", "name": "Prof. Rao"}],
+        "rooms": [ROOM], "slots": SLOTS,
+    }
+    client.put(f"/api/projects/{project['id']}/data", json=data)
+    entries = [
+        {"id": "E1", "course_id": "C1", "faculty_id": "F1", "room_id": "R1", "start_slot_id": "MON_09", "length_slots": 2},
+        {"id": "E2", "course_id": "C2", "faculty_id": "F2", "room_id": "R1", "start_slot_id": "MON_10", "length_slots": 1},
+    ]
+    response = client.post(f"/api/projects/{project['id']}/validate", json={"timetable": entries})
+    assert response.status_code == 200
+    room_clash = next(c for c in response.json()["clashes"] if c["type"] == "room_clash")
+    assert room_clash["affected_slot_ids"] == ["MON_10"]
+
+
+def test_validate_is_real_without_mock_mode():
     r = client.post("/api/projects/demo/validate", json={"timetable": []})
-    assert r.status_code == 501
+    assert r.status_code == 200
+    assert r.json() == {"valid": True, "clashes": []}
 
 
 @pytest.mark.parametrize("scenario,status", [

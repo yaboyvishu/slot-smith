@@ -2,8 +2,7 @@
 
 Status:
   real:        create/get project, save data, save constraints, save timetable,
-               generate (Phase 2)
-  mock only:   validate (Phase 5)  -> 501 when MOCK is off
+               generate (Phase 2), validate (Phase 5)
   not yet:     export pdf/ics (Phase 6) -> 501
 """
 from fastapi import APIRouter, HTTPException
@@ -106,11 +105,16 @@ def generate(project_id: str, scenario: str | None = None) -> GenerateResult:
 
 @router.post("/{project_id}/validate", response_model=ValidateResponse)
 def validate(project_id: str, body: ValidateRequest, scenario: str | None = None) -> ValidateResponse:
-    _load_or_404(project_id)
+    project = _load_or_404(project_id)
     if config.mock_mode():
         filename = _pick_scenario(fixtures.VALIDATE_SCENARIOS, scenario)
         return ValidateResponse.model_validate(fixtures.load_fixture(filename))
-    raise _not_implemented("Validate", "Phase 5")
+
+    # Treat the request as a proposed edit only: recompute occupied slots and
+    # return clashes without mutating or saving the project's timetable.
+    entries = rules.fill_slot_ids(body.timetable, project.data.slots)
+    clashes = rules.find_clashes(project.data, project.constraints, entries)
+    return ValidateResponse(valid=not clashes, clashes=clashes)
 
 
 @router.get("/{project_id}/export/pdf")
