@@ -26,6 +26,7 @@ removing, or changing a type) are announced to the whole team.
 ```
 
 Codes: `VALIDATION_ERROR` (422), `BAD_REQUEST` (400), `NOT_FOUND` (404),
+`PAYLOAD_TOO_LARGE` (413),
 `METHOD_NOT_ALLOWED` (405), `CONFLICT` (409), `INTERNAL_ERROR` (500),
 `NOT_IMPLEMENTED` (501, a feature that is planned but not built yet),
 `SOLVER_TIMEOUT` (504, `generate` ran out of time without an answer).
@@ -110,7 +111,7 @@ Counting rule (frozen here so the numbers in the UI are predictable):
 | PUT | `/api/projects/{id}/timetable` | `{ "timetable": [TimetableEntry] }` | `Project` |
 | GET | `/api/projects/{id}/export/pdf` | none | PDF file download |
 | GET | `/api/projects/{id}/export/ics?term_start=YYYY-MM-DD&term_end=YYYY-MM-DD&timezone=IANA_ZONE` | none | ICS file download |
-| POST | `/api/projects/{id}/import` | CSV files (stretch) | `Project` |
+| POST | `/api/projects/{id}/import` | multipart CSV files | `Project` |
 
 Notes:
 - `generate` always returns **200** with a `GenerateResult`, including when the
@@ -144,6 +145,30 @@ Notes:
 - Entry ids inside one timetable must be unique (422 otherwise).
 - Unknown project id: 404 `NOT_FOUND`.
 
+### CSV project import (Phase 8)
+
+`POST /api/projects/{id}/import` accepts `multipart/form-data` with four required
+file fields: `courses`, `faculty`, `rooms`, and `slots`. Each file is UTF-8 CSV
+(an optional UTF-8 BOM is accepted), with a 2 MiB limit per file. The upload
+replaces the project's courses, faculty, rooms, and time slots only after all
+four files and their cross-references validate. A successful import preserves
+the project's constraints and clears its saved timetable, which may refer to
+the old data. A failed import makes no project changes.
+
+Headers are case-sensitive; their order is flexible. Required and optional columns:
+
+| File | Required headers | Optional headers |
+|---|---|---|
+| `courses` | `id, code, name, faculty_id, student_count, sessions_per_week` | `session_length_slots` (defaults to `1`) |
+| `faculty` | `id, name` | `preferred_slot_ids` (semicolon-separated slot IDs) |
+| `rooms` | `id, name, capacity` | none |
+| `slots` | `id, day, start, end` | `label` |
+
+The returned `Project` contains the imported data and an empty timetable. Invalid
+headers, values, duplicate IDs, or references return 422 `VALIDATION_ERROR`; each
+detail identifies the file and, when available, the CSV row and column. Files
+over 2 MiB return 413 `PAYLOAD_TOO_LARGE`. Unknown projects return 404 `NOT_FOUND`.
+
 ### Build status (what works today)
 
 | Endpoint | Status |
@@ -152,7 +177,7 @@ Notes:
 | `generate` | **real** (Phase 2 and 3): hard rules and multi-slot classes. Teacher preferences are optimised (Phase 3). `?scenario=` still works in mock mode |
 | `validate` | real; mock fixtures remain available with `MOCK=1` |
 | `export/pdf`, `export/ics` | real; PDF uses the saved timetable, ICS requires a date range and IANA timezone |
-| `import` | not built (stretch) |
+| `import` | real; atomically replaces project data from four CSV uploads |
 
 ## Mock mode and demo projects (for frontend development)
 

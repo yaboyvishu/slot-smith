@@ -15,7 +15,48 @@ uvicorn app.main:app --reload --port 8000
 - Interactive API docs (try every endpoint in the browser): http://localhost:8000/docs
 - Tests: `pytest` (run from the `backend` folder)
 
+## Solver benchmark
+
+Run the deterministic small, medium and large synthetic workloads from this
+folder. The benchmark reports elapsed generation time, candidate placement count,
+result status, clash count and preference score, along with the Python, OR-Tools
+and solver settings used. It calls the same generator and clash checker as the API;
+it does not start the web server or change project data.
+
+```powershell
+python scripts\benchmark.py
+python scripts\benchmark.py --suite large --time-limit 20 --workers 1 --output benchmark-results\large.json
+```
+
+The default worker count is one to make runs easier to compare. Solver runtimes
+still depend on the computer and background load, so include the environment and
+settings from the report when comparing results. A `timeout` is recorded as a
+benchmark outcome; an `error` causes a non-zero exit code.
+
 The contract the frontend builds against is `../docs/api-contract.md`.
+
+## Import project data from CSV
+
+`POST /api/projects/{id}/import` accepts four required multipart file fields:
+`courses`, `faculty`, `rooms`, and `slots`. Headers are case-sensitive but may
+appear in any order. See `../docs/api-contract.md` for all accepted columns and
+error responses. Each UTF-8 CSV file can be up to 2 MiB. The import validates
+all files and references before replacing project data; it preserves constraints
+and clears the old timetable only when the import succeeds.
+
+Required columns:
+
+```text
+courses.csv: id,code,name,faculty_id,student_count,sessions_per_week
+faculty.csv: id,name
+rooms.csv: id,name,capacity
+slots.csv: id,day,start,end
+```
+
+Optional columns are `courses.session_length_slots` (default `1`),
+`faculty.preferred_slot_ids` (semicolon-separated slot IDs), and `slots.label`.
+Use `multipart/form-data` with those four fields; Swagger UI at `/docs` can send
+the upload without a frontend implementation.
 
 ## Mock mode (for the frontend team)
 
@@ -95,4 +136,6 @@ curl -X POST http://localhost:8000/api/projects/demo-impossible/generate   # exp
 | `app/services/storage.py` | saving projects as JSON files in `backend/data/` (git-ignored) |
 | `app/services/fixtures.py` | loads `fixtures/` for mock mode and the demo projects |
 | `app/services/exporters.py` | creates PDF and ICS downloads from the saved timetable |
+| `app/services/csv_import.py` | parses and validates complete four-file project data imports |
+| `scripts/benchmark.py` | runs deterministic solver workloads and prints/saves a JSON report |
 | `fixtures/` | canned JSON the frontend can copy into its mocks |

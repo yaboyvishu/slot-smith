@@ -7,8 +7,8 @@ Status:
 """
 from datetime import date
 
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import Response
+from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi.responses import JSONResponse, Response
 
 from app import config
 from app.models.schemas import (
@@ -21,7 +21,7 @@ from app.models.schemas import (
     ValidateRequest,
     ValidateResponse,
 )
-from app.services import exporters, fixtures, rules, storage
+from app.services import csv_import, exporters, fixtures, rules, storage
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -114,6 +114,44 @@ def validate(project_id: str, body: ValidateRequest, scenario: str | None = None
     entries = rules.fill_slot_ids(body.timetable, project.data.slots)
     clashes = rules.find_clashes(project.data, project.constraints, entries)
     return ValidateResponse(valid=not clashes, clashes=clashes)
+
+
+@router.post("/{project_id}/import", response_model=None)
+async def import_csv(
+    project_id: str,
+    courses: UploadFile = File(...),
+    faculty: UploadFile = File(...),
+    rooms: UploadFile = File(...),
+    slots: UploadFile = File(...),
+) -> Project | JSONResponse:
+    project = _load_or_404(project_id)
+    uploads = {
+        "courses.csv": courses,
+        "faculty.csv": faculty,
+        "rooms.csv": rooms,
+        "slots.csv": slots,
+    }
+    contents = {
+        filename: await upload.read(csv_import.MAX_FILE_BYTES + 1)
+        for filename, upload in uploads.items()
+    }
+    try:
+        data = csv_import.parse_project_csv(contents)
+    except csv_import.CsvImportError as error:
+        status_code = error.status_code
+        code = "PAYLOAD_TOO_LARGE" if status_code == 413 else "VALIDATION_ERROR"
+        message = "CSV upload exceeds the file size limit." if status_code == 413 else "CSV import failed."
+        return JSONResponse(
+            status_code=status_code,
+            content={"error": {"code": code, "message": message, "details": error.details}},
+        )
+
+    def replace_data(current: Project) -> None:
+        current.data = data
+        # A newly imported dataset can invalidate every old timetable reference.
+        current.timetable = []
+
+    return storage.update_project(project_id, replace_data)
 
 
 @router.get("/{project_id}/export/pdf")
