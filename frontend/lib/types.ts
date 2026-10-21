@@ -75,6 +75,10 @@ export interface TimetableEntry {
   slot_ids: string[];
 }
 
+export type TimetableEntryInput = Omit<TimetableEntry, "slot_ids"> & {
+  slot_ids?: string[];
+};
+
 export type ConflictType =
   | "teacher_clash"
   | "room_clash"
@@ -121,7 +125,7 @@ export interface HealthResponse {
 }
 
 export interface ValidateRequest {
-  timetable: TimetableEntry[];
+  timetable: TimetableEntryInput[];
 }
 
 export interface ValidateResponse {
@@ -130,7 +134,7 @@ export interface ValidateResponse {
 }
 
 export interface SaveTimetableRequest {
-  timetable: TimetableEntry[];
+  timetable: TimetableEntryInput[];
 }
 
 export interface CreateProjectRequest {

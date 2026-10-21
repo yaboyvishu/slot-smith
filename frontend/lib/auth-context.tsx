@@ -10,108 +10,86 @@ import {
   type ReactNode,
 } from "react";
 
-export const favoriteScreens = [
-  { href: "/data", label: "Data setup" },
-  { href: "/constraints", label: "Constraints" },
-  { href: "/results", label: "Generate & results" },
-  { href: "/conflicts", label: "Conflicts" },
-  { href: "/export", label: "Export" },
-] as const;
+export const DEMO_CREDENTIALS = {
+  email: "demo@slotsmith.app",
+  password: "demo123",
+  name: "Demo User",
+} as const;
 
-type FavoriteScreen = (typeof favoriteScreens)[number]["href"];
+export interface DemoUser {
+  email: string;
+  name: string;
+}
 
 interface DemoSessionContextValue {
-  userName: string | null;
-  favorites: FavoriteScreen[];
-  logIn: (name: string) => void;
-  logOut: () => void;
-  toggleFavorite: (href: FavoriteScreen) => void;
+  user: DemoUser | null;
+  login: (email: string, password: string) => boolean;
+  logout: () => void;
 }
 
 const DemoSessionContext = createContext<DemoSessionContextValue | null>(null);
 const userStorageKey = "slotsmith-demo-user";
-const favoritesStoragePrefix = "slotsmith-demo-favorites:";
-
-function isFavoriteScreen(value: unknown): value is FavoriteScreen {
-  return (
-    typeof value === "string" &&
-    favoriteScreens.some((screen) => screen.href === value)
-  );
-}
-
-function readFavorites(name: string): FavoriteScreen[] {
-  const storedValue = localStorage.getItem(
-    `${favoritesStoragePrefix}${encodeURIComponent(name)}`,
-  );
-
-  if (!storedValue) {
-    return [];
-  }
+function readSavedUser(): DemoUser | null {
+  const storedValue = localStorage.getItem(userStorageKey);
+  if (!storedValue) return null;
 
   try {
     const parsedValue: unknown = JSON.parse(storedValue);
-    return Array.isArray(parsedValue)
-      ? parsedValue.filter(isFavoriteScreen)
-      : [];
+    if (
+      parsedValue &&
+      typeof parsedValue === "object" &&
+      "email" in parsedValue &&
+      parsedValue.email === DEMO_CREDENTIALS.email
+    ) {
+      return { email: DEMO_CREDENTIALS.email, name: DEMO_CREDENTIALS.name };
+    }
   } catch {
-    return [];
+    return null;
   }
+
+  return null;
 }
 
 export function DemoSessionProvider({ children }: { children: ReactNode }) {
-  const [userName, setUserName] = useState<string | null>(null);
-  const [favorites, setFavorites] = useState<FavoriteScreen[]>([]);
+  const [user, setUser] = useState<DemoUser | null>(null);
 
   useEffect(() => {
+    // Demo login only: this browser storage is not real authentication or security.
     const timeoutId = window.setTimeout(() => {
-      const storedName = localStorage.getItem(userStorageKey);
-      if (storedName) {
-        setUserName(storedName);
-        setFavorites(readFavorites(storedName));
+      const savedUser = readSavedUser();
+      if (savedUser) {
+        setUser(savedUser);
       }
     }, 0);
 
     return () => window.clearTimeout(timeoutId);
   }, []);
 
-  const logIn = useCallback((name: string) => {
-    const normalizedName = name.trim();
-    if (!normalizedName) {
-      return;
+  const login = useCallback((email: string, password: string) => {
+    if (
+      email.trim().toLowerCase() !== DEMO_CREDENTIALS.email ||
+      password !== DEMO_CREDENTIALS.password
+    ) {
+      return false;
     }
 
-    localStorage.setItem(userStorageKey, normalizedName);
-    setUserName(normalizedName);
-    setFavorites(readFavorites(normalizedName));
+    const demoUser: DemoUser = {
+      email: DEMO_CREDENTIALS.email,
+      name: DEMO_CREDENTIALS.name,
+    };
+    localStorage.setItem(userStorageKey, JSON.stringify(demoUser));
+    setUser(demoUser);
+    return true;
   }, []);
 
-  const logOut = useCallback(() => {
+  const logout = useCallback(() => {
     localStorage.removeItem(userStorageKey);
-    setUserName(null);
-    setFavorites([]);
+    setUser(null);
   }, []);
-
-  const toggleFavorite = useCallback(
-    (href: FavoriteScreen) => {
-      if (!userName) {
-        return;
-      }
-
-      const nextFavorites = favorites.includes(href)
-        ? favorites.filter((favorite) => favorite !== href)
-        : [...favorites, href];
-      localStorage.setItem(
-        `${favoritesStoragePrefix}${encodeURIComponent(userName)}`,
-        JSON.stringify(nextFavorites),
-      );
-      setFavorites(nextFavorites);
-    },
-    [favorites, userName],
-  );
 
   const value = useMemo(
-    () => ({ userName, favorites, logIn, logOut, toggleFavorite }),
-    [userName, favorites, logIn, logOut, toggleFavorite],
+    () => ({ user, login, logout }),
+    [user, login, logout],
   );
 
   return (
