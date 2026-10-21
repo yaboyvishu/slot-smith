@@ -15,6 +15,24 @@ uvicorn app.main:app --reload --port 8000
 - Interactive API docs (try every endpoint in the browser): http://localhost:8000/docs
 - Tests: `pytest` (run from the `backend` folder)
 
+## Solver benchmark
+
+Run the deterministic small, medium and large synthetic workloads from this
+folder. The benchmark reports elapsed generation time, candidate placement count,
+result status, clash count and preference score, along with the Python, OR-Tools
+and solver settings used. It calls the same generator and clash checker as the API;
+it does not start the web server or change project data.
+
+```powershell
+python scripts\benchmark.py
+python scripts\benchmark.py --suite large --time-limit 20 --workers 1 --output benchmark-results\large.json
+```
+
+The default worker count is one to make runs easier to compare. Solver runtimes
+still depend on the computer and background load, so include the environment and
+settings from the report when comparing results. A `timeout` is recorded as a
+benchmark outcome; an `error` causes a non-zero exit code.
+
 The contract the frontend builds against is `../docs/api-contract.md`.
 
 ## Mock mode (for the frontend team)
@@ -95,4 +113,5 @@ curl -X POST http://localhost:8000/api/projects/demo-impossible/generate   # exp
 | `app/services/storage.py` | saving projects as JSON files in `backend/data/` (git-ignored) |
 | `app/services/fixtures.py` | loads `fixtures/` for mock mode and the demo projects |
 | `app/services/exporters.py` | creates PDF and ICS downloads from the saved timetable |
+| `scripts/benchmark.py` | runs deterministic solver workloads and prints/saves a JSON report |
 | `fixtures/` | canned JSON the frontend can copy into its mocks |

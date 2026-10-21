@@ -1,0 +1,63 @@
+{
+  "created_at_utc": "2026-10-21T16:38:17+00:00",
+  "environment": {
+    "python": "3.13.0",
+    "platform": "Windows-10-10.0.19045-SP0",
+    "ortools": "9.15.6755"
+  },
+  "settings": {
+    "time_limit_seconds": 10.0,
+    "workers": 1,
+    "seed": 2026
+  },
+  "results": [
+    {
+      "suite": "small",
+      "courses": 6,
+      "sessions_requested": 12,
+      "teachers": 2,
+      "rooms": 3,
+      "slots": 30,
+      "candidate_placement_options": 710,
+      "status": "complete",
+      "timetable_entries": 12,
+      "clash_count": 0,
+      "preferences_met": 2,
+      "preferences_total": 2,
+      "conflict_types": [],
+      "elapsed_seconds": 1.002
+    },
+    {
+      "suite": "medium",
+      "courses": 9,
+      "sessions_requested": 18,
+      "teachers": 3,
+      "rooms": 4,
+      "slots": 30,
+      "candidate_placement_options": 1400,
+      "status": "complete",
+      "timetable_entries": 18,
+      "clash_count": 0,
+      "preferences_met": 3,
+      "preferences_total": 3,
+      "conflict_types": [],
+      "elapsed_seconds": 0.557
+    },
+    {
+      "suite": "large",
+      "courses": 15,
+      "sessions_requested": 30,
+      "teachers": 5,
+      "rooms": 6,
+      "slots": 30,
+      "candidate_placement_options": 3840,
+      "status": "complete",
+      "timetable_entries": 30,
+      "clash_count": 0,
+      "preferences_met": 5,
+      "preferences_total": 5,
+      "conflict_types": [],
+      "elapsed_seconds": 1.863
+    }
+  ]
+}
