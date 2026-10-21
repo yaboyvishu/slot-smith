@@ -109,7 +109,7 @@ Counting rule (frozen here so the numbers in the UI are predictable):
 | POST | `/api/projects/{id}/validate` | `{ "timetable": [TimetableEntry] }` | `{ "valid": bool, "clashes": [Conflict] }` |
 | PUT | `/api/projects/{id}/timetable` | `{ "timetable": [TimetableEntry] }` | `Project` |
 | GET | `/api/projects/{id}/export/pdf` | none | PDF file download |
-| GET | `/api/projects/{id}/export/ics` | none | ICS file download |
+| GET | `/api/projects/{id}/export/ics?term_start=YYYY-MM-DD&term_end=YYYY-MM-DD&timezone=IANA_ZONE` | none | ICS file download |
 | POST | `/api/projects/{id}/import` | CSV files (stretch) | `Project` |
 
 Notes:
@@ -122,10 +122,16 @@ Notes:
 - Before solving, `generate` checks for problems it can name directly and returns them all at
   once as `impossible`: `missing_reference` (a course with a blank or unknown teacher),
   `no_room_big_enough`, `not_enough_slots` (no slots at all), `no_consecutive_block`.
-  If the solver itself finds no solution the result has one `blocking_rules` item.
-  (Phase 4 will make that item say *which* rules clash.)
+  If the solver itself finds no solution the result has a `blocking_rules` item; Phase 4
+  explains which hard rules clash.
 - `validate` does not save anything. It checks the timetable against the project's
   current data and constraints using the same rules the solver uses.
+- Both exports use the saved timetable and return **409** if the project has none or it
+  contains references or class lengths that cannot be exported.
+- The ICS export requires inclusive `term_start` and `term_end` dates and an IANA timezone
+  such as `Asia/Kolkata`. It creates one calendar event for each matching weekday in that
+  date range, converts local slot times to UTC, and accepts ranges up to 367 days.
+  These are explicit dated events, so no semester dates or timezone are stored in the project.
 - `PUT .../data` and `PUT .../constraints` replace the stored value. Half-finished
   data is allowed (for example a course whose `faculty_id` does not exist yet): the
   backend only rejects bad shapes, duplicate ids, and a slot whose `end` is not later
@@ -145,7 +151,7 @@ Notes:
 | health, create/get project, save data, save constraints, save timetable | **real** |
 | `generate` | **real** (Phase 2 and 3): hard rules and multi-slot classes. Teacher preferences are optimised (Phase 3). `?scenario=` still works in mock mode |
 | `validate` | real; mock fixtures remain available with `MOCK=1` |
-| `export/pdf`, `export/ics` | 501 until Phase 6 |
+| `export/pdf`, `export/ics` | real; PDF uses the saved timetable, ICS requires a date range and IANA timezone |
 | `import` | not built (stretch) |
 
 ## Mock mode and demo projects (for frontend development)
