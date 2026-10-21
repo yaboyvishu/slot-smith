@@ -80,6 +80,11 @@ Counting rule (frozen here so the numbers in the UI are predictable):
 - If the time limit runs out after a valid timetable was found, `generate` returns the best
   one found so far (still rule-clean, maybe not the best possible). `504 SOLVER_TIMEOUT`
   only happens when no valid timetable was found in time.
+- **Explaining `impossible` (Phase 4).** Shapes are unchanged, but `unmet_constraints` is now
+  specific: `teacher_overloaded` (a teacher needs more slots than the week has), `not_enough_slots` /
+  `no_room_big_enough` (too little room time), and `blocking_rules` items that name either a group of
+  courses that cannot be scheduled together or the hard rules that clash. Each has a plain-English
+  `message` and a `suggested_fix`. Show them as given; do not parse the text.
 - Equally good timetables may differ between runs (the solver searches in parallel); the
   `preferences_met` score is the same.
 
