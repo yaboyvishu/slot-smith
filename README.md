@@ -119,7 +119,7 @@ The front end and the back end are separate. The browser talks to the API with J
 | **Solver** | [Google OR-Tools](https://developers.google.com/optimization) (CP-SAT) |
 | **PDF export** | ReportLab |
 | **Calendar export** | `ics` library |
-| **Storage** | JSON files (SQLite if time allows) |
+| **Storage** | SQLite database (`backend/data/projects.sqlite3`); existing JSON projects migrate automatically |
 
 **Why this stack:** Python is beginner-friendly and OR-Tools is built for scheduling problems like this one. FastAPI is also Python, so the solver and the API share one language, and it generates interactive API docs for testing. React/Next.js gives us an interactive, editable timetable grid, and keeping the front end and API separate is how real applications are built.
 

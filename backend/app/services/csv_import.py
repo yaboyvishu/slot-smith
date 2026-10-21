@@ -132,7 +132,8 @@ def parse_project_csv(files: dict[str, bytes]) -> ProjectData:
             )
         except CsvImportError as error:
             errors.extend(error.details)
-            error_status = max(error_status, error.status_code)
+            if error.status_code == 413:
+                error_status = 413
     if errors:
         raise CsvImportError(errors, status_code=error_status)
 

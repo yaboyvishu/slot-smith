@@ -1,19 +1,17 @@
-"""Project storage: one JSON file per project.
+"""SQLite project storage with automatic import of legacy JSON projects.
 
-Everything that touches the disk lives in this file, so it can be swapped for
-SQLite or a hosted database later without changing any route.
-
-Free hosting platforms may wipe the disk on redeploy or when the service sleeps.
-The demo projects are re-created from fixtures on demand, so a wiped disk never
-leaves the demo empty.
+``DATA_DIR`` remains the storage location setting. The database lives at
+``DATA_DIR/projects.sqlite3``. On first use, existing ``<project-id>.json``
+files are copied into SQLite in one transaction and left in place as backups.
+After migration, SQLite is authoritative.
 """
-import os
+from contextlib import contextmanager
 import re
-import tempfile
+import sqlite3
 import threading
 import uuid
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Iterator
 
 from app import config
 from app.models.schemas import Project
@@ -22,6 +20,7 @@ from app.services import fixtures
 _BACKEND_DIR = Path(__file__).resolve().parents[2]
 _ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,40}$")
 _lock = threading.RLock()
+_initialized_databases: set[Path] = set()
 
 
 class ProjectNotFound(Exception):
@@ -36,29 +35,92 @@ def _data_dir() -> Path:
     return path
 
 
-def _path_for(project_id: str) -> Path:
-    # Reject anything that is not a plain id, so an id can never point outside the data dir.
-    if not _ID_RE.match(project_id):
+def _database_path() -> Path:
+    return _data_dir() / "projects.sqlite3"
+
+
+def _validate_id(project_id: str) -> None:
+    if not _ID_RE.fullmatch(project_id):
         raise ProjectNotFound(project_id)
-    return _data_dir() / f"{project_id}.json"
 
 
-def _write_atomic(path: Path, text: str) -> None:
-    """Write to a temp file, then rename, so a crash never leaves half a file."""
-    fd, tmp_name = tempfile.mkstemp(dir=path.parent, suffix=".tmp")
+def _initialize() -> Path:
+    """Create the database and migrate legacy JSON projects once per process."""
+    path = _database_path()
+    if path in _initialized_databases:
+        return path
+
+    with _lock:
+        if path in _initialized_databases:
+            return path
+        connection = sqlite3.connect(path, timeout=30)
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            connection.execute(
+                "CREATE TABLE IF NOT EXISTS projects ("
+                "id TEXT PRIMARY KEY NOT NULL, payload TEXT NOT NULL)"
+            )
+            for legacy_path in sorted(path.parent.glob("*.json")):
+                project_id = legacy_path.stem
+                if not _ID_RE.fullmatch(project_id):
+                    continue
+                try:
+                    project = Project.model_validate_json(legacy_path.read_text(encoding="utf-8"))
+                except Exception as error:
+                    raise RuntimeError(
+                        f"Cannot migrate legacy project file {legacy_path.name}: {error}"
+                    ) from error
+                if project.id != project_id:
+                    raise RuntimeError(
+                        f"Cannot migrate legacy project file {legacy_path.name}: "
+                        f"its project id is '{project.id}'."
+                    )
+                connection.execute(
+                    "INSERT OR IGNORE INTO projects (id, payload) VALUES (?, ?)",
+                    (project.id, project.model_dump_json()),
+                )
+            connection.commit()
+        except BaseException:
+            connection.rollback()
+            raise
+        finally:
+            connection.close()
+        _initialized_databases.add(path)
+    return path
+
+
+@contextmanager
+def _connection(path: Path) -> Iterator[sqlite3.Connection]:
+    connection = sqlite3.connect(path, timeout=30)
     try:
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            f.write(text)
-        os.replace(tmp_name, path)
+        yield connection
+        connection.commit()
     except BaseException:
-        if os.path.exists(tmp_name):
-            os.remove(tmp_name)
+        connection.rollback()
         raise
+    finally:
+        connection.close()
+
+
+def _project_from_row(row: tuple[str] | None) -> Project | None:
+    if row is None:
+        return None
+    return Project.model_validate_json(row[0])
+
+
+def _write_project(connection: sqlite3.Connection, project: Project) -> None:
+    connection.execute(
+        "INSERT INTO projects (id, payload) VALUES (?, ?) "
+        "ON CONFLICT(id) DO UPDATE SET payload = excluded.payload",
+        (project.id, project.model_dump_json()),
+    )
 
 
 def save_project(project: Project) -> None:
-    with _lock:
-        _write_atomic(_path_for(project.id), project.model_dump_json(indent=2))
+    _validate_id(project.id)
+    path = _initialize()
+    with _lock, _connection(path) as connection:
+        _write_project(connection, project)
 
 
 def create_project(name: str) -> Project:
@@ -67,23 +129,45 @@ def create_project(name: str) -> Project:
     return project
 
 
+def _seed_project(connection: sqlite3.Connection, project_id: str) -> Project | None:
+    filename = fixtures.DEMO_PROJECTS.get(project_id)
+    if filename is None:
+        return None
+    project = Project.model_validate(fixtures.load_fixture(filename))
+    _write_project(connection, project)
+    return project
+
+
 def load_project(project_id: str) -> Project:
-    with _lock:
-        path = _path_for(project_id)
-        if not path.exists():
-            seed = fixtures.DEMO_PROJECTS.get(project_id)
-            if seed is None:
-                raise ProjectNotFound(project_id)
-            project = Project.model_validate(fixtures.load_fixture(seed))
-            save_project(project)
+    _validate_id(project_id)
+    path = _initialize()
+    with _lock, _connection(path) as connection:
+        row = connection.execute(
+            "SELECT payload FROM projects WHERE id = ?", (project_id,)
+        ).fetchone()
+        project = _project_from_row(row)
+        if project is not None:
             return project
-        return Project.model_validate_json(path.read_text(encoding="utf-8"))
+        seeded = _seed_project(connection, project_id)
+        if seeded is not None:
+            return seeded
+    raise ProjectNotFound(project_id)
 
 
 def update_project(project_id: str, change: Callable[[Project], None]) -> Project:
-    """Load, apply `change` to the project, save, return it. One request at a time."""
-    with _lock:
-        project = load_project(project_id)
+    """Apply and persist one project change in a single SQLite transaction."""
+    _validate_id(project_id)
+    path = _initialize()
+    with _lock, _connection(path) as connection:
+        connection.execute("BEGIN IMMEDIATE")
+        row = connection.execute(
+            "SELECT payload FROM projects WHERE id = ?", (project_id,)
+        ).fetchone()
+        project = _project_from_row(row)
+        if project is None:
+            project = _seed_project(connection, project_id)
+        if project is None:
+            raise ProjectNotFound(project_id)
         change(project)
-        save_project(project)
+        _write_project(connection, project)
         return project

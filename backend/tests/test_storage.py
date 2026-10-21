@@ -1,6 +1,6 @@
 import pytest
 
-from app.models.schemas import ProjectData
+from app.models.schemas import Project, ProjectData
 from app.services import storage
 
 
@@ -50,4 +50,22 @@ def test_no_temp_files_left_behind(tmp_path):
     created = storage.create_project("p")
     storage.update_project(created.id, lambda p: setattr(p, "data", ProjectData()))
     files = sorted(f.name for f in (tmp_path / "data").iterdir())
-    assert files == [f"{created.id}.json"]
+    assert files == ["projects.sqlite3"]
+
+
+def test_legacy_json_projects_are_migrated_and_kept_as_backup(tmp_path):
+    data_dir = tmp_path / "data"
+    data_dir.mkdir()
+    legacy = Project(id="LEGACY01", name="Legacy project")
+    legacy_file = data_dir / f"{legacy.id}.json"
+    legacy_file.write_text(legacy.model_dump_json(indent=2), encoding="utf-8")
+
+    loaded = storage.load_project(legacy.id)
+
+    assert loaded == legacy
+    assert (data_dir / "projects.sqlite3").exists()
+    assert legacy_file.exists()
+
+    storage.update_project(legacy.id, lambda project: setattr(project, "name", "Updated in SQLite"))
+    assert storage.load_project(legacy.id).name == "Updated in SQLite"
+    assert Project.model_validate_json(legacy_file.read_text(encoding="utf-8")).name == "Legacy project"
