@@ -15,7 +15,10 @@ from collections import defaultdict
 from app.models.schemas import (
     Conflict,
     Constraints,
+    Course,
+    Faculty,
     ProjectData,
+    Room,
     TimeSlot,
     TimetableEntry,
 )
@@ -99,6 +102,63 @@ def _count_phrase(names: list[str]) -> str:
     return _join(parts)
 
 
+def _move_suggestion(
+    entry_ids: tuple[str, ...],
+    entries: list[TimetableEntry],
+    data: ProjectData,
+    occupied: dict[str, list[str]],
+    courses: dict[str, Course],
+    faculty: dict[str, Faculty],
+    rooms: dict[str, Room],
+) -> str | None:
+    """Find a concrete slot and room for one class in a clash group.
+
+    All entries in the reported clash group are treated as moving away from
+    their current cells. The proposed destination must be free for both the
+    class's teacher and room against every other entry, and fit the class.
+    """
+    by_id = {entry.id: entry for entry in entries}
+    target = by_id[entry_ids[0]]
+    course = courses.get(target.course_id)
+    teacher = faculty.get(target.faculty_id)
+    if course is None or teacher is None or not rooms:
+        return None
+
+    moving = set(entry_ids)
+    target_slots = set(occupied[target.id])
+    for start in sort_slots(data.slots):
+        run = slot_run(data.slots, start.id, target.length_slots)
+        if len(run) != target.length_slots or set(run) == target_slots:
+            continue
+        proposed_slots = set(run)
+        for room in data.rooms:
+            if room.capacity < course.student_count:
+                continue
+            busy = False
+            for other in entries:
+                if other.id in moving:
+                    continue
+                other_slots = set(occupied[other.id])
+                if not proposed_slots.isdisjoint(other_slots) and (
+                    other.faculty_id == target.faculty_id or other.room_id == room.id
+                ):
+                    busy = True
+                    break
+            if busy:
+                continue
+
+            by_slot_id = {slot.id: slot for slot in data.slots}
+            first, last = by_slot_id[run[0]], by_slot_id[run[-1]]
+            time = first.label if len(run) == 1 and first.label else f"{first.day} {first.start}-{last.end}"
+            if room.id == target.room_id:
+                return f"Move {course.name} to {time}, where {teacher.name} and {room.name} are both free."
+            return (
+                f"Move {course.name} to {time} in {room.name}, where {teacher.name} "
+                f"and {room.name} are both free."
+            )
+    return None
+
+
 # ---------------------------------------------------------------------------
 # Clash detection
 # ---------------------------------------------------------------------------
@@ -121,6 +181,9 @@ def find_clashes(
 
     def ordered(slot_ids) -> list[str]:
         return sorted({s for s in slot_ids if s in slots}, key=lambda s: week_pos[s])
+
+    def suggestion(ids: tuple[str, ...]) -> str:
+        return _move_suggestion(ids, entries, data, occupied, courses, faculty, rooms) or ""
 
     def course_name(entry: TimetableEntry) -> str:
         course = courses.get(entry.course_id)
@@ -183,13 +246,14 @@ def find_clashes(
         for owner, ids, sids in double_bookings(lambda e: e.faculty_id):
             names = [course_name(by_id[i]) for i in ids]
             who = faculty[owner].name if owner in faculty else owner
+            fix = suggestion(ids) or "Move one of these classes to a different time."
             clashes.append(Conflict(
                 type="teacher_clash",
                 message=(
                     f"{who} is teaching {_COUNT_WORDS.get(len(ids), len(ids))} classes at "
                     f"{_join([slot_text(slots[s]) for s in sids])}: {_count_phrase(names)}."
                 ),
-                suggested_fix="Move one of these classes to a different time.",
+                suggested_fix=fix,
                 affected_entry_ids=list(ids),
                 affected_slot_ids=sids,
             ))
@@ -199,13 +263,14 @@ def find_clashes(
             names = [course_name(by_id[i]) for i in ids]
             where = rooms[owner].name if owner in rooms else owner
             times = "twice" if len(ids) == 2 else f"{len(ids)} times"
+            fix = suggestion(ids) or "Move one of these classes to another room or time."
             clashes.append(Conflict(
                 type="room_clash",
                 message=(
                     f"{where} is booked {times} at "
                     f"{_join([slot_text(slots[s]) for s in sids])}: {_count_phrase(names)}."
                 ),
-                suggested_fix="Move one of these classes to another room or time.",
+                suggested_fix=fix,
                 affected_entry_ids=list(ids),
                 affected_slot_ids=sids,
             ))

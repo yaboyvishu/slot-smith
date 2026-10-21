@@ -144,7 +144,7 @@ Notes:
 |---|---|
 | health, create/get project, save data, save constraints, save timetable | **real** |
 | `generate` | **real** (Phase 2 and 3): hard rules and multi-slot classes. Teacher preferences are optimised (Phase 3). `?scenario=` still works in mock mode |
-| `validate` | mock only (`MOCK=1`), real in Phase 5. Otherwise 501 |
+| `validate` | real; mock fixtures remain available with `MOCK=1` |
 | `export/pdf`, `export/ics` | 501 until Phase 6 |
 | `import` | not built (stretch) |
 
