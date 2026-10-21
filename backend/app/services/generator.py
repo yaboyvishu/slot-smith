@@ -3,7 +3,9 @@
 Order of work:
   1. reject obvious problems with plain-English messages (missing teachers, no room
      big enough, no block of consecutive slots)  -> status "impossible"
+  1b. exact counting checks (explain.quick_checks): overloaded teacher, too little room time
   2. run the solver                               -> "impossible" if the rules clash
+     (then explain.explain_infeasible names the clashing courses / rules)
   3. double-check the solver's answer with rules.find_clashes
   4. count how many teacher preferences the timetable meets
 
@@ -19,7 +21,7 @@ from app.models.schemas import (
     Project,
     ProjectData,
 )
-from app.services import rules
+from app.services import explain, rules
 from app.services.solve_types import SolveOutcome
 
 
@@ -130,6 +132,8 @@ def generate(
     data, constraints = project.data, project.constraints
 
     problems = check_references(data) + find_unplaceable(data, constraints)
+    if not problems:
+        problems = explain.quick_checks(data, constraints)  # exact counting proofs, no solver needed
     if problems:
         return impossible(problems)
 
@@ -145,7 +149,8 @@ def generate(
     if outcome.status == "timeout":
         raise SolverTimeout()
     if outcome.status == "infeasible":
-        return impossible([Conflict(
+        found = explain.explain_infeasible(data, constraints, solve_fn, config.explain_time_limit())
+        return impossible(found or [Conflict(
             type="blocking_rules",
             message=(
                 "The rules cannot all be satisfied at the same time with the current "

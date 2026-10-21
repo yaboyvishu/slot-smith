@@ -35,3 +35,11 @@ def solver_workers() -> int:
         return max(1, int(os.getenv("SOLVER_WORKERS", "4")))
     except ValueError:
         return 4
+
+
+def explain_time_limit() -> float:
+    """Seconds spent working out WHY a project is impossible (generate stays quick if exceeded)."""
+    try:
+        return float(os.getenv("EXPLAIN_TIME_LIMIT", "6"))
+    except ValueError:
+        return 6.0

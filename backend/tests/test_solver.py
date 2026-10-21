@@ -267,3 +267,13 @@ def test_met_preferences_equal_the_true_maximum_on_random_small_projects(seed):
     assert_clean(proj, result.timetable)
     # preferences_total counts every teacher with a liked slot; the reference counts the same way
     assert result.preferences_met == best, f"seed {seed}: got {result.preferences_met}, best {best}"
+
+
+def test_phase4_explains_impossible_with_the_real_solver():
+    from test_explain import two_labs_project  # same project as the brute-force test
+
+    result = generator.generate(two_labs_project(), time_limit=20)
+    assert result.status == "impossible"
+    messages = " ".join(c.message for c in result.unmet_constraints)
+    assert "LAB1 and LAB2 cannot all be scheduled together" in messages
+    assert "no teacher in two places at once" in messages

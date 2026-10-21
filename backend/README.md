@@ -44,6 +44,13 @@ list are in the contract.
 | `SOLVER_TIME_LIMIT` | `10` | seconds `generate` may search; the best timetable found so far is returned, and only if none was found it gives up (HTTP 504 `SOLVER_TIMEOUT`) |
 | `SOLVER_WORKERS` | `4` | solver threads; use `1` on a very small host |
 
+| `EXPLAIN_TIME_LIMIT` | `6` | seconds spent working out *why* a project is impossible (see below) |
+
+**Impossible projects (Phase 4).** Instead of one generic message, `generate` now says what is
+wrong: an overloaded teacher, too little room time, which small group of courses cannot be
+scheduled together, and which rules clash (and that turning one off makes it solvable). If the
+explanation runs out of time it falls back to the generic message.
+
 **Preferences (Phase 3).** The solver tries to meet as many teachers' preferred slots as it
 can, but never breaks a hard rule. With several workers, two runs may give different (equally
 good) timetables with the same `preferences_met`. For a repeatable timetable during a demo, set

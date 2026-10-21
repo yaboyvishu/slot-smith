@@ -120,7 +120,7 @@ def test_time_limit_is_passed_to_the_solver():
         seen.append(limit)
         return SolveOutcome(status="infeasible")
     generator.generate(sample(), time_limit=3.5, solve_fn=spy)
-    assert seen == [3.5]
+    assert seen[0] == 3.5  # the main solve gets the full limit (later calls are the explainer)
 
 
 # ---- Phase 3: the solver's own preference tally is only a sanity check ----
