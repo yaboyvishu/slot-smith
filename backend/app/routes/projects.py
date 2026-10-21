@@ -3,9 +3,12 @@
 Status:
   real:        create/get project, save data, save constraints, save timetable,
                generate (Phase 2), validate (Phase 5)
-  not yet:     export pdf/ics (Phase 6) -> 501
+  real:        PDF and ICS timetable exports (Phase 6)
 """
+from datetime import date
+
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import Response
 
 from app import config
 from app.models.schemas import (
@@ -18,7 +21,7 @@ from app.models.schemas import (
     ValidateRequest,
     ValidateResponse,
 )
-from app.services import fixtures, rules, storage
+from app.services import exporters, fixtures, rules, storage
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -28,10 +31,6 @@ def _load_or_404(project_id: str) -> Project:
         return storage.load_project(project_id)
     except storage.ProjectNotFound:
         raise HTTPException(status_code=404, detail="Project not found.")
-
-
-def _not_implemented(what: str, phase: str) -> HTTPException:
-    return HTTPException(status_code=501, detail=f"{what} is not available yet (planned for {phase}).")
 
 
 def _pick_scenario(scenarios: dict[str, str], requested: str | None) -> str:
@@ -118,12 +117,30 @@ def validate(project_id: str, body: ValidateRequest, scenario: str | None = None
 
 
 @router.get("/{project_id}/export/pdf")
-def export_pdf(project_id: str):
-    _load_or_404(project_id)
-    raise _not_implemented("PDF export", "Phase 6")
+def export_pdf(project_id: str) -> Response:
+    project = _load_or_404(project_id)
+    try:
+        content = exporters.build_pdf(project)
+    except exporters.ExportDataError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+    return Response(
+        content=content,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{exporters.filename(project.name, "pdf")}"'},
+    )
 
 
 @router.get("/{project_id}/export/ics")
-def export_ics(project_id: str):
-    _load_or_404(project_id)
-    raise _not_implemented("ICS export", "Phase 6")
+def export_ics(project_id: str, term_start: date, term_end: date, timezone: str) -> Response:
+    project = _load_or_404(project_id)
+    try:
+        content = exporters.build_ics(project, term_start, term_end, timezone)
+    except exporters.ExportInputError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except exporters.ExportDataError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+    return Response(
+        content=content,
+        media_type="text/calendar; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{exporters.filename(project.name, "ics")}"'},
+    )

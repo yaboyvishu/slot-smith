@@ -37,6 +37,24 @@ curl -X POST "http://localhost:8000/api/projects/demo/validate?scenario=clashes"
 The projects `demo` and `demo-impossible` always exist. Details and the full scenario
 list are in the contract.
 
+## Export a timetable (Phase 6)
+
+Generate or save a timetable first. PDF export downloads the saved weekly schedule:
+
+```powershell
+Invoke-WebRequest http://localhost:8000/api/projects/demo/export/pdf -OutFile timetable.pdf
+```
+
+ICS export needs the semester date range and the timezone used for the local timetable.
+Dates are inclusive, and `timezone` must be an IANA name such as `Asia/Kolkata`:
+
+```powershell
+Invoke-WebRequest 'http://localhost:8000/api/projects/demo/export/ics?term_start=2026-11-02&term_end=2027-03-31&timezone=Asia%2FKolkata' -OutFile timetable.ics
+```
+
+The ICS file contains one dated event for every class occurrence in that range. See
+`../docs/api-contract.md` for response and error details.
+
 ## Solver settings
 
 | Variable | Default | Meaning |
@@ -76,4 +94,5 @@ curl -X POST http://localhost:8000/api/projects/demo-impossible/generate   # exp
 | `app/services/generator.py` | pre-checks, runs the solver, double-checks and scores the answer |
 | `app/services/storage.py` | saving projects as JSON files in `backend/data/` (git-ignored) |
 | `app/services/fixtures.py` | loads `fixtures/` for mock mode and the demo projects |
+| `app/services/exporters.py` | creates PDF and ICS downloads from the saved timetable |
 | `fixtures/` | canned JSON the frontend can copy into its mocks |
