@@ -276,7 +276,87 @@ def test_mock_validate_scenarios(monkeypatch):
 # ---------- export: Phase 6 ----------
 
 @pytest.mark.parametrize("kind", ["pdf", "ics"])
-def test_export_is_501_for_now(kind):
-    r = client.get(f"/api/projects/demo/export/{kind}")
-    assert r.status_code == 501
-    assert r.json()["error"]["code"] == "NOT_IMPLEMENTED"
+def test_export_without_saved_timetable_is_conflict(kind):
+    project = new_project("Export without timetable")
+    params = (
+        {"term_start": "2026-11-02", "term_end": "2026-11-06", "timezone": "Asia/Kolkata"}
+        if kind == "ics" else None
+    )
+    r = client.get(f"/api/projects/{project['id']}/export/{kind}", params=params)
+    assert r.status_code == 409
+    assert r.json()["error"]["code"] == "CONFLICT"
+
+
+# ---------- import: Phase 8 ----------
+
+IMPORT_FILES = {
+    "courses": (
+        "courses.csv",
+        b"id,code,name,faculty_id,student_count,sessions_per_week,session_length_slots\n"
+        b"C1,CS101,Algorithms,T1,20,2,1\n",
+        "text/csv",
+    ),
+    "faculty": ("faculty.csv", b"id,name,preferred_slot_ids\nT1,Dr Test,S1;S2\n", "text/csv"),
+    "rooms": ("rooms.csv", b"id,name,capacity\nR1,Room 1,30\n", "text/csv"),
+    "slots": (
+        "slots.csv",
+        b"id,day,start,end,label\nS1,Mon,09:00,10:00,Morning\nS2,Mon,10:00,11:00,Late morning\n",
+        "text/csv",
+    ),
+}
+
+
+def test_csv_import_replaces_data_preserves_constraints_and_clears_timetable():
+    project = new_project("CSV import")
+    client.put(f"/api/projects/{project['id']}/data", json={
+        "courses": [{"id": "OLD_C", "code": "OLD", "name": "Old course", "faculty_id": "OLD_T",
+                     "student_count": 10, "sessions_per_week": 1}],
+        "faculty": [{"id": "OLD_T", "name": "Old teacher"}],
+        "rooms": [{"id": "OLD_R", "name": "Old room", "capacity": 20}],
+        "slots": [{"id": "OLD_S", "day": "Mon", "start": "09:00", "end": "10:00"}],
+    })
+    client.put(f"/api/projects/{project['id']}/constraints", json={
+        "no_teacher_clash": False, "no_room_clash": True, "room_capacity": True, "preferences": [],
+    })
+    client.put(f"/api/projects/{project['id']}/timetable", json={"timetable": [{
+        "id": "OLD_E", "course_id": "OLD_C", "faculty_id": "OLD_T", "room_id": "OLD_R",
+        "start_slot_id": "OLD_S", "length_slots": 1,
+    }]})
+
+    response = client.post(f"/api/projects/{project['id']}/import", files=IMPORT_FILES)
+
+    assert response.status_code == 200, response.text
+    result = response.json()
+    assert [course["id"] for course in result["data"]["courses"]] == ["C1"]
+    assert result["constraints"]["no_teacher_clash"] is False
+    assert result["timetable"] == []
+
+
+def test_failed_csv_import_is_atomic_and_reports_row_reference():
+    project = new_project("CSV import atomicity")
+    assert client.post(f"/api/projects/{project['id']}/import", files=IMPORT_FILES).status_code == 200
+    bad_files = dict(IMPORT_FILES)
+    bad_files["courses"] = (
+        "courses.csv",
+        b"id,code,name,faculty_id,student_count,sessions_per_week\nC1,CS101,Algorithms,MISSING,20,2\n",
+        "text/csv",
+    )
+
+    response = client.post(f"/api/projects/{project['id']}/import", files=bad_files)
+
+    assert response.status_code == 422
+    detail = response.json()["error"]["details"][0]
+    assert detail["field"] == "courses.csv row 2 (faculty_id)"
+    saved = client.get(f"/api/projects/{project['id']}").json()
+    assert saved["data"]["courses"][0]["faculty_id"] == "T1"
+
+
+def test_csv_import_file_size_limit():
+    project = new_project("CSV import file size")
+    large_files = dict(IMPORT_FILES)
+    large_files["courses"] = ("courses.csv", b"x" * (2 * 1024 * 1024 + 1), "text/csv")
+
+    response = client.post(f"/api/projects/{project['id']}/import", files=large_files)
+
+    assert response.status_code == 413
+    assert response.json()["error"]["code"] == "PAYLOAD_TOO_LARGE"
