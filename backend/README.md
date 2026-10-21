@@ -15,6 +15,14 @@ uvicorn app.main:app --reload --port 8000
 - Interactive API docs (try every endpoint in the browser): http://localhost:8000/docs
 - Tests: `pytest` (run from the `backend` folder)
 
+## Project storage
+
+Projects are stored in SQLite at `DATA_DIR/projects.sqlite3` (default:
+`backend/data/projects.sqlite3`). On first use, the backend copies existing
+`<project-id>.json` files from that directory into the database. It leaves those
+JSON files in place as backups; after migration, SQLite is the active store.
+The built-in demo projects are still seeded automatically when first requested.
+
 ## Solver benchmark
 
 Run the deterministic small, medium and large synthetic workloads from this
@@ -133,7 +141,7 @@ curl -X POST http://localhost:8000/api/projects/demo-impossible/generate   # exp
 | `app/services/rules.py` | the shared rules: slot adjacency, clash detection, preference counting |
 | `app/services/solver.py` | the OR-Tools CP-SAT model |
 | `app/services/generator.py` | pre-checks, runs the solver, double-checks and scores the answer |
-| `app/services/storage.py` | saving projects as JSON files in `backend/data/` (git-ignored) |
+| `app/services/storage.py` | SQLite project storage and one-time migration from legacy JSON files |
 | `app/services/fixtures.py` | loads `fixtures/` for mock mode and the demo projects |
 | `app/services/exporters.py` | creates PDF and ICS downloads from the saved timetable |
 | `app/services/csv_import.py` | parses and validates complete four-file project data imports |
