@@ -338,7 +338,6 @@ The status is *impossible*. The Conflicts panel lists the rules that cannot all 
 | "Dr. Sharma is needed in more sessions than there are slots." | A teacher is overloaded | Add slots or move a course to another teacher |
 | "Not enough room-slot combinations for all sessions." | Too many classes, too little space or time | Add rooms or slots, or reduce sessions per week |
 
-*(These messages are examples. Update them to match what your app actually shows.)*
 
 ### When an edit causes a clash
 Edit conflicts are different from solver conflicts. If you move a class and it creates a clash, the affected cells turn **red** and the reason is shown. Undo the move or fix the clash, then save.
@@ -375,7 +374,6 @@ To import an ICS file into **Google Calendar**: open Calendar on the web, click 
 
 ## Project Structure
 
-> Update this to match your final layout.
 
 ```
 .
@@ -403,7 +401,6 @@ We tested the solver on inputs of increasing size.
 | Medium | ... | ... | ... | ... | ... |
 | Large | ... | ... | ... | ... | ... |
 
-*(Fill in with your real measurements.)*
 
 ## Screenshots
 
@@ -419,9 +416,6 @@ We tested the solver on inputs of increasing size.
 | **Ishika** | 1st Year / B.Tech CSE (Core) | *(add role)* |
 | **Prateek** | 1st Year / B.Tech CSE (AI/ML) | *(add role)* |
 
-## What We Learned
-
-*(Write 3-4 lines at the end: what was hard, what surprised you, what you'd do next.)*
 
 ## Biggest Challenges
 
