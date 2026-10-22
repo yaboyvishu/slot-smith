@@ -1,0 +1,14 @@
+# Version ranges, not exact pins: this file was written without being able to
+# install anything. After `pip install -r requirements.txt` works on your
+# machine, run `pip freeze > requirements.lock.txt` and deploy from the lock file.
+fastapi>=0.115,<1.0
+uvicorn[standard]>=0.30,<1.0
+pydantic>=2.8,<3.0
+google-genai>=1.0,<3.0
+ortools>=9.10
+reportlab>=4.2
+ics>=0.7.2
+tzdata>=2024.1
+pytest>=8.0
+httpx>=0.27
+python-multipart>=0.0.9

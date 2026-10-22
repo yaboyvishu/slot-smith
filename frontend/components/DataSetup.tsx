@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
+import CatIllustration from "./CatIllustration";
+import PageHeader from "./PageHeader";
 import {
   ApiError,
   createProject,
@@ -19,6 +21,8 @@ import type {
   Time,
   TimeSlot,
 } from "../lib/types";
+import { useProject } from "../lib/project-context";
+import FavoriteButton from "./FavoriteButton";
 
 type CollectionKey = keyof ProjectData;
 type ValidationMessages = Record<string, string[]>;
@@ -208,7 +212,7 @@ function FieldInput({
         aria-invalid={Boolean(error)}
         aria-describedby={error ? errorId : undefined}
         onChange={(event) => onChange(event.target.value)}
-        className="min-h-10 w-full rounded-md border border-slate-300 bg-white px-2.5 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-600 focus-visible:border-[#8a204f] focus-visible:ring-2 focus-visible:ring-[#f8c8dc] aria-[invalid=true]:border-red-600"
+        className="min-h-10 w-full rounded-md border border-slate-300 bg-white px-2.5 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-600 focus-visible:border-brand-maroon-strong focus-visible:ring-2 focus-visible:ring-brand-pink aria-[invalid=true]:border-red-600"
       />
       {error && (
         <p id={errorId} className="mt-1 max-w-48 text-xs leading-5 text-red-700">
@@ -239,7 +243,7 @@ function DayInput({
         id={id}
         value={value}
         onChange={(event) => onChange(event.target.value as Day)}
-        className="min-h-10 w-full rounded-md border border-slate-300 bg-white px-2.5 text-sm text-slate-900 shadow-sm outline-none transition focus-visible:border-[#8a204f] focus-visible:ring-2 focus-visible:ring-[#f8c8dc]"
+        className="min-h-10 w-full rounded-md border border-slate-300 bg-white px-2.5 text-sm text-slate-900 shadow-sm outline-none transition focus-visible:border-brand-maroon-strong focus-visible:ring-2 focus-visible:ring-brand-pink"
       >
         {days.map((day) => (
           <option key={day} value={day}>
@@ -279,7 +283,7 @@ function FacultyInput({
         onChange={(event) => onChange(event.target.value)}
         aria-invalid={Boolean(error)}
         aria-describedby={error ? errorId : undefined}
-        className="min-h-10 w-full rounded-md border border-slate-300 bg-white px-2.5 text-sm text-slate-900 shadow-sm outline-none transition focus-visible:border-[#8a204f] focus-visible:ring-2 focus-visible:ring-[#f8c8dc] aria-[invalid=true]:border-red-600"
+        className="min-h-10 w-full rounded-md border border-slate-300 bg-white px-2.5 text-sm text-slate-900 shadow-sm outline-none transition focus-visible:border-brand-maroon-strong focus-visible:ring-2 focus-visible:ring-brand-pink aria-[invalid=true]:border-red-600"
       >
         <option value="">Choose faculty</option>
         {value && !faculty.some((person) => person.id === value) && (
@@ -326,7 +330,7 @@ function EditableTable<T extends { id: string }>({
         <button
           type="button"
           onClick={onAdd}
-          className="min-h-10 rounded-lg border border-[#8a204f] px-4 text-sm font-semibold text-[#681638] transition hover:bg-[#f8c8dc] hover:text-[#111111] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8a204f]"
+          className="min-h-10 rounded-lg border border-brand-pink px-4 text-sm font-semibold text-brand-pink transition hover:bg-brand-pink hover:text-brand-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-pink"
         >
           Add row
         </button>
@@ -358,8 +362,7 @@ function EditableTable<T extends { id: string }>({
                   colSpan={columns.length + 1}
                   className="bg-white px-4 py-8 text-center text-sm text-slate-700"
                 >
-                  No {label.toLowerCase()} have been added yet. Use “Add row” to
-                  create one.
+                  {emptyMessage} Use <strong>Add row</strong> to start.
                 </td>
               </tr>
             ) : (
@@ -397,6 +400,7 @@ function firstCollectionWithErrors(
 }
 
 export default function DataSetup() {
+  const { projectId, isProjectIdLoaded, projectLoadVersion, setProjectId, projects, isProjectsLoaded, rememberProject, removeProject, openProject, openNewProjectDialog, registerUnsavedChanges, newProjectNotice, setNewProjectNotice } = useProject();
   const [projectName, setProjectName] = useState("");
   const [project, setProject] = useState<Project | null>(null);
   const [projectData, setProjectData] = useState<ProjectData | null>(null);
@@ -408,7 +412,43 @@ export default function DataSetup() {
   const [errorDetails, setErrorDetails] = useState<string[]>([]);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
+  const showError = useCallback((error: unknown) => {
+    setErrorMessage(
+      error instanceof ApiError
+        ? error.message
+        : "Something went wrong. Please try again.",
+    );
+    setErrorDetails(error instanceof ApiError ? getErrorDetails(error) : []);
+    setStatusMessage(null);
+    setNewProjectNotice(null);
+  }, [setNewProjectNotice]);
+
   useEffect(() => onServerWakingUp(() => setIsWakingUp(true)), []);
+
+  useEffect(() => {
+    if (!isProjectIdLoaded || !projectId) return;
+    let cancelled = false;
+    void Promise.resolve().then(() => {
+      if (!cancelled) {
+        setIsLoading(true);
+        setErrorMessage(null);
+      }
+      return getProject(projectId);
+    }).then((loaded) => {
+      if (cancelled) return;
+      setProject(loaded);
+      setProjectData(loaded.data);
+      setProjectName(loaded.name);
+      rememberProject(loaded);
+    }).catch((error: unknown) => {
+      if (cancelled) return;
+      showError(error);
+      if (error instanceof ApiError && error.code === "NOT_FOUND") {
+        setErrorMessage("We couldn’t find this project on the server. Remove it from this browser’s list if you no longer need it.");
+      }
+    }).finally(() => { if (!cancelled) setIsLoading(false); });
+    return () => { cancelled = true; };
+  }, [isProjectIdLoaded, projectId, projectLoadVersion, rememberProject, showError]);
 
   const validationMessages = useMemo(
     () => (projectData ? validateProjectData(projectData) : {}),
@@ -418,16 +458,9 @@ export default function DataSetup() {
     (count, messages) => count + messages.length,
     0,
   );
-
-  function showError(error: unknown) {
-    setErrorMessage(
-      error instanceof ApiError
-        ? error.message
-        : "Something went wrong. Please try again.",
-    );
-    setErrorDetails(error instanceof ApiError ? getErrorDetails(error) : []);
-    setStatusMessage(null);
-  }
+  const hasUnsavedData = Boolean(
+    project && projectData && JSON.stringify(project.data) !== JSON.stringify(projectData),
+  );
 
   async function handleCreateProject(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -436,10 +469,13 @@ export default function DataSetup() {
     setErrorMessage(null);
     setErrorDetails([]);
     setStatusMessage(null);
+    setNewProjectNotice(null);
 
     try {
       const createdProject = await createProject({ name: projectName.trim() });
+      setProjectId(createdProject.id);
       const loadedProject = await getProject(createdProject.id);
+      rememberProject(loadedProject);
       setProject(loadedProject);
       setProjectData(loadedProject.data);
       setProjectName(loadedProject.name);
@@ -451,9 +487,9 @@ export default function DataSetup() {
     }
   }
 
-  async function handleSave() {
+  const handleSave = useCallback(async (): Promise<boolean> => {
     if (!project || !projectData) {
-      return;
+      return false;
     }
 
     const errors = validateProjectData(projectData);
@@ -463,7 +499,8 @@ export default function DataSetup() {
       setErrorMessage("Fix the data issues shown in the table before saving.");
       setErrorDetails([]);
       setStatusMessage(null);
-      return;
+      setNewProjectNotice(null);
+      return false;
     }
 
     setIsSaving(true);
@@ -471,19 +508,29 @@ export default function DataSetup() {
     setErrorMessage(null);
     setErrorDetails([]);
     setStatusMessage(null);
+    setNewProjectNotice(null);
 
     try {
       const savedProject = await updateProjectData(project.id, projectData);
       setProject(savedProject);
       setProjectData(savedProject.data);
       setStatusMessage("Project data saved.");
+      setNewProjectNotice(null);
+      return true;
     } catch (error) {
       showError(error);
+      return false;
     } finally {
       setIsSaving(false);
       setIsWakingUp(false);
     }
-  }
+  }, [project, projectData, setNewProjectNotice, showError]);
+
+  useEffect(() => registerUnsavedChanges(hasUnsavedData, handleSave), [
+    hasUnsavedData,
+    handleSave,
+    registerUnsavedChanges,
+  ]);
 
   function updateCourse(index: number, course: Course) {
     setProjectData((current) =>
@@ -497,6 +544,7 @@ export default function DataSetup() {
         : current,
     );
     setStatusMessage(null);
+    setNewProjectNotice(null);
     setErrorMessage(null);
   }
 
@@ -512,6 +560,7 @@ export default function DataSetup() {
         : current,
     );
     setStatusMessage(null);
+    setNewProjectNotice(null);
     setErrorMessage(null);
   }
 
@@ -527,6 +576,7 @@ export default function DataSetup() {
         : current,
     );
     setStatusMessage(null);
+    setNewProjectNotice(null);
     setErrorMessage(null);
   }
 
@@ -542,6 +592,7 @@ export default function DataSetup() {
         : current,
     );
     setStatusMessage(null);
+    setNewProjectNotice(null);
     setErrorMessage(null);
   }
 
@@ -568,7 +619,7 @@ export default function DataSetup() {
       <EditableTable<Course>
         label="Courses"
         rows={projectData.courses}
-        emptyMessage="No courses yet."
+        emptyMessage="You haven&apos;t added any courses yet."
         onAdd={() =>
           setProjectData({
             ...projectData,
@@ -595,11 +646,11 @@ export default function DataSetup() {
         columns={[
           {
             key: "id",
-            label: "id",
+            label: "Reference code",
             render: (index) => (
               <FieldInput
                 id={inputId("courses", index, "id")}
-                label={`Course ${index + 1} id`}
+                label={`Course ${index + 1} reference code`}
                 value={projectData.courses[index].id}
                 error={inputError("courses", index, "id")}
                 onChange={(value) => updateCourse(index, { ...projectData.courses[index], id: value })}
@@ -608,11 +659,11 @@ export default function DataSetup() {
           },
           {
             key: "code",
-            label: "code",
+            label: "Course code",
             render: (index) => (
               <FieldInput
                 id={inputId("courses", index, "code")}
-                label={`Course ${index + 1} code`}
+                label={`Course ${index + 1} course code`}
                 value={projectData.courses[index].code}
                 onChange={(value) => updateCourse(index, { ...projectData.courses[index], code: value })}
               />
@@ -620,7 +671,7 @@ export default function DataSetup() {
           },
           {
             key: "name",
-            label: "name",
+            label: "Course name",
             render: (index) => (
               <FieldInput
                 id={inputId("courses", index, "name")}
@@ -632,11 +683,11 @@ export default function DataSetup() {
           },
           {
             key: "faculty_id",
-            label: "faculty_id",
+            label: "Faculty member",
             render: (index) => (
               <FacultyInput
                 id={inputId("courses", index, "faculty_id")}
-                label={`Course ${index + 1} faculty_id`}
+                label={`Course ${index + 1} faculty member`}
                 value={projectData.courses[index].faculty_id}
                 faculty={projectData.faculty}
                 error={inputError("courses", index, "faculty_id")}
@@ -646,11 +697,11 @@ export default function DataSetup() {
           },
           {
             key: "student_count",
-            label: "student_count",
+            label: "Number of students",
             render: (index) => (
               <FieldInput
                 id={inputId("courses", index, "student_count")}
-                label={`Course ${index + 1} student_count`}
+                label={`Course ${index + 1} number of students`}
                 type="number"
                 min={0}
                 step={1}
@@ -662,11 +713,11 @@ export default function DataSetup() {
           },
           {
             key: "sessions_per_week",
-            label: "sessions_per_week",
+            label: "Classes per week",
             render: (index) => (
               <FieldInput
                 id={inputId("courses", index, "sessions_per_week")}
-                label={`Course ${index + 1} sessions_per_week`}
+                label={`Course ${index + 1} classes per week`}
                 type="number"
                 min={1}
                 step={1}
@@ -678,11 +729,11 @@ export default function DataSetup() {
           },
           {
             key: "session_length_slots",
-            label: "session_length_slots",
+            label: "Slots per class",
             render: (index) => (
               <FieldInput
                 id={inputId("courses", index, "session_length_slots")}
-                label={`Course ${index + 1} session_length_slots`}
+                label={`Course ${index + 1} slots per class`}
                 type="number"
                 min={1}
                 step={1}
@@ -704,7 +755,7 @@ export default function DataSetup() {
       <EditableTable<Faculty>
         label="Faculty"
         rows={projectData.faculty}
-        emptyMessage="No faculty yet."
+        emptyMessage="You haven&apos;t added any faculty yet."
         onAdd={() =>
           setProjectData({
             ...projectData,
@@ -723,11 +774,11 @@ export default function DataSetup() {
         columns={[
           {
             key: "id",
-            label: "id",
+            label: "Reference code",
             render: (index) => (
               <FieldInput
                 id={inputId("faculty", index, "id")}
-                label={`Faculty ${index + 1} id`}
+                label={`Faculty member ${index + 1} reference code`}
                 value={projectData.faculty[index].id}
                 error={inputError("faculty", index, "id")}
                 onChange={(value) => updateFaculty(index, { ...projectData.faculty[index], id: value })}
@@ -736,11 +787,11 @@ export default function DataSetup() {
           },
           {
             key: "name",
-            label: "name",
+            label: "Faculty member name",
             render: (index) => (
               <FieldInput
                 id={inputId("faculty", index, "name")}
-                label={`Faculty ${index + 1} name`}
+                label={`Faculty member ${index + 1} name`}
                 value={projectData.faculty[index].name}
                 onChange={(value) => updateFaculty(index, { ...projectData.faculty[index], name: value })}
               />
@@ -748,13 +799,13 @@ export default function DataSetup() {
           },
           {
             key: "preferred_slot_ids",
-            label: "preferred_slot_ids",
+            label: "Preferred time slots",
             render: (index) => (
               <FieldInput
                 id={inputId("faculty", index, "preferred_slot_ids")}
-                label={`Faculty ${index + 1} preferred_slot_ids, comma-separated`}
+                label={`Faculty member ${index + 1} preferred time slot codes, separated by commas`}
                 value={projectData.faculty[index].preferred_slot_ids.join(", ")}
-                placeholder="MON_09, TUE_10"
+                placeholder="Example: MON_09, TUE_10 (use time slot codes)"
                 onChange={(value) =>
                   updateFaculty(index, {
                     ...projectData.faculty[index],
@@ -779,7 +830,7 @@ export default function DataSetup() {
       <EditableTable<Room>
         label="Rooms"
         rows={projectData.rooms}
-        emptyMessage="No rooms yet."
+        emptyMessage="You haven&apos;t added any rooms yet."
         onAdd={() =>
           setProjectData({
             ...projectData,
@@ -795,11 +846,11 @@ export default function DataSetup() {
         columns={[
           {
             key: "id",
-            label: "id",
+            label: "Reference code",
             render: (index) => (
               <FieldInput
                 id={inputId("rooms", index, "id")}
-                label={`Room ${index + 1} id`}
+                label={`Room ${index + 1} reference code`}
                 value={projectData.rooms[index].id}
                 error={inputError("rooms", index, "id")}
                 onChange={(value) => updateRoom(index, { ...projectData.rooms[index], id: value })}
@@ -808,7 +859,7 @@ export default function DataSetup() {
           },
           {
             key: "name",
-            label: "name",
+            label: "Room name",
             render: (index) => (
               <FieldInput
                 id={inputId("rooms", index, "name")}
@@ -820,11 +871,11 @@ export default function DataSetup() {
           },
           {
             key: "capacity",
-            label: "capacity",
+            label: "Seats",
             render: (index) => (
               <FieldInput
                 id={inputId("rooms", index, "capacity")}
-                label={`Room ${index + 1} capacity`}
+                label={`Room ${index + 1} number of seats`}
                 type="number"
                 min={1}
                 step={1}
@@ -846,7 +897,7 @@ export default function DataSetup() {
       <EditableTable<TimeSlot>
         label="Time slots"
         rows={projectData.slots}
-        emptyMessage="No time slots yet."
+        emptyMessage="You haven&apos;t added any time slots yet."
         onAdd={() =>
           setProjectData({
             ...projectData,
@@ -865,11 +916,11 @@ export default function DataSetup() {
         columns={[
           {
             key: "id",
-            label: "id",
+            label: "Reference code",
             render: (index) => (
               <FieldInput
                 id={inputId("slots", index, "id")}
-                label={`Time slot ${index + 1} id`}
+                label={`Time slot ${index + 1} reference code`}
                 value={projectData.slots[index].id}
                 error={inputError("slots", index, "id")}
                 onChange={(value) => updateSlot(index, { ...projectData.slots[index], id: value })}
@@ -878,7 +929,7 @@ export default function DataSetup() {
           },
           {
             key: "day",
-            label: "day",
+            label: "Day",
             render: (index) => (
               <DayInput
                 id={inputId("slots", index, "day")}
@@ -890,11 +941,11 @@ export default function DataSetup() {
           },
           {
             key: "start",
-            label: "start",
+            label: "Start time",
             render: (index) => (
               <FieldInput
                 id={inputId("slots", index, "start")}
-                label={`Time slot ${index + 1} start`}
+                label={`Time slot ${index + 1} start time`}
                 type="time"
                 value={projectData.slots[index].start}
                 error={inputError("slots", index, "start")}
@@ -909,11 +960,11 @@ export default function DataSetup() {
           },
           {
             key: "end",
-            label: "end",
+            label: "End time",
             render: (index) => (
               <FieldInput
                 id={inputId("slots", index, "end")}
-                label={`Time slot ${index + 1} end`}
+                label={`Time slot ${index + 1} end time`}
                 type="time"
                 value={projectData.slots[index].end}
                 error={inputError("slots", index, "end")}
@@ -928,7 +979,7 @@ export default function DataSetup() {
           },
           {
             key: "label",
-            label: "label",
+            label: "Time slot name",
             render: (index) => (
               <FieldInput
                 id={inputId("slots", index, "label")}
@@ -958,53 +1009,66 @@ export default function DataSetup() {
 
   return (
     <section className="space-y-6">
-      <header>
-        <p className="text-sm font-semibold uppercase tracking-wide text-[var(--brand-accent)]">
-          Phase 1 · Data setup
-        </p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-[var(--brand-accent)]">
-          Project data
-        </h1>
-        <p className="mt-3 max-w-3xl leading-7 text-[var(--brand-accent)]">
-          Create a project, then add the courses, faculty, rooms, and
-          time slots used by the scheduler. Changes are saved when you choose
-          “Save project data”.
-        </p>
-      </header>
-
-      {!project && (
-        <form
-          onSubmit={handleCreateProject}
-          className="w-full max-w-2xl rounded-2xl border border-slate-300 bg-[var(--panel-background)] p-6 text-slate-950 shadow-lg sm:p-8"
-        >
-          <h2 className="text-lg font-semibold text-slate-950">Start a project</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            Enter a name. The app will create the project and load its data
-            through the API.
-          </p>
-          <label
-            htmlFor="project-name"
-            className="mt-5 block text-sm font-medium text-slate-800"
-          >
-            Project name
-          </label>
-          <input
-            id="project-name"
-            name="name"
-            required
-            value={projectName}
-            onChange={(event) => setProjectName(event.target.value)}
-            className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-slate-900 outline-none focus-visible:border-[#8a204f] focus-visible:ring-2 focus-visible:ring-[#f8c8dc]"
+      <div className="grid min-w-0 grid-cols-1 items-center gap-6 md:grid-cols-[minmax(0,1fr)_minmax(20rem,0.95fr)] md:gap-10">
+        <div className="min-w-0 space-y-6">
+          <PageHeader
+            step={1}
+            total={6}
+            title="Set up your data"
+            accentLine="make it yours."
+            description="Add the courses, faculty, rooms and time slots your timetable is built from."
           />
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="mt-5 min-h-11 rounded-lg bg-[#f8c8dc] px-5 font-semibold text-[#111111] transition hover:bg-[#f3a9c9] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f8c8dc] disabled:cursor-wait disabled:opacity-60"
-          >
-            {isLoading ? "Creating project…" : "Create project"}
-          </button>
-        </form>
-      )}
+
+          {!project && (
+            <form
+              onSubmit={handleCreateProject}
+              className="w-full max-w-2xl rounded-2xl border border-slate-300 bg-[var(--panel-background)] p-6 text-slate-950 shadow-lg sm:p-8"
+            >
+              <h2 className="text-lg font-semibold text-slate-950">Start a project</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Give this timetable a name to get started. We&apos;ll set up a new project for you.
+              </p>
+              <label
+                htmlFor="project-name"
+                className="mt-5 block text-sm font-medium text-slate-800"
+              >
+                Project name
+              </label>
+              <input
+                id="project-name"
+                name="name"
+                required
+                value={projectName}
+                onChange={(event) => setProjectName(event.target.value)}
+                className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-slate-900 outline-none focus-visible:border-brand-maroon-strong focus-visible:ring-2 focus-visible:ring-brand-pink"
+              />
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="font-display mt-5 min-h-11 rounded-lg bg-brand-pink px-5 font-semibold text-brand-ink transition hover:bg-brand-pink-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-pink disabled:cursor-wait disabled:opacity-60"
+              >
+                {isLoading ? "Creating project…" : "Create project"}
+              </button>
+            </form>
+          )}
+
+          {!project && (
+            <section aria-labelledby="your-projects-title" className="mt-5 w-full max-w-2xl rounded-2xl border border-slate-300 bg-[var(--panel-background)] p-5 text-slate-950 shadow-lg">
+              <h2 id="your-projects-title" className="text-lg font-semibold">Your projects</h2>
+              <p className="mt-1 text-sm text-slate-700">This list is saved in this browser. Removing a project here only removes it from this browser’s list; it does not delete it from the server.</p>
+              {!isProjectsLoaded ? <p role="status" className="mt-3 text-sm">Loading your project list…</p> : projects.length === 0 ? <p className="mt-3 text-sm">No saved projects yet. Projects you open or create here will appear in this list.</p> : (
+                <ul className="mt-3 divide-y divide-slate-200">{projects.map((item) => (
+                  <li key={item.id} className="project-list-row flex flex-wrap items-center justify-between gap-3 py-3">
+                    <div className="project-list-details min-w-0"><p className="truncate font-medium">{item.name}</p><p className="text-xs text-slate-600">Last opened {item.last_opened ? new Date(item.last_opened).toLocaleString() : "Recently"}</p></div>
+                    <div className="flex gap-2"><button type="button" onClick={() => { openProject(item.id); setProject(null); setProjectData(null); }} className="project-list-open group inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand-pink px-4 text-sm font-semibold text-brand-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-maroon-strong">Open<svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" className="size-4 shrink-0"><path d="M3 10h13m-5-5 5 5-5 5" /></svg></button><button type="button" onClick={() => removeProject(item.id)} aria-label={`Remove ${item.name} from this browser’s list`} className="min-h-11 rounded-lg border border-slate-400 px-3 text-sm text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-maroon-strong">Remove</button></div>
+                  </li>
+                ))}</ul>
+              )}
+            </section>
+          )}
+        </div>
+        <CatIllustration size="hero" />
+      </div>
 
       {isLoading && (
         <p role="status" className="rounded-lg bg-blue-50 p-4 text-sm text-blue-900">
@@ -1030,18 +1094,28 @@ export default function DataSetup() {
         </div>
       )}
 
-      {project && projectData && (
+      {project && projectData && !isLoading && (
         <div className="space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-300 bg-[var(--panel-background)] px-4 py-3 text-slate-950 shadow-md">
             <div>
-              <p className="font-semibold text-slate-900">{project.name}</p>
-              <p className="text-sm text-slate-600">Project ID: {project.id}</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="font-semibold text-slate-900">{project.name}</p>
+                <FavoriteButton id={project.id} name={project.name} />
+              </div>
+              <p className="text-sm text-slate-600">Project reference: {project.id}</p>
             </div>
+            <button
+              type="button"
+              onClick={openNewProjectDialog}
+              className="min-h-11 rounded-lg border border-brand-maroon-strong px-4 font-semibold text-brand-maroon transition hover:bg-pink-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-maroon-strong"
+            >
+              + New project
+            </button>
             <button
               type="button"
               onClick={handleSave}
               disabled={isSaving || validationCount > 0}
-              className="min-h-11 rounded-lg bg-[#f8c8dc] px-5 font-semibold text-[#111111] transition hover:bg-[#f3a9c9] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f8c8dc] disabled:cursor-not-allowed disabled:opacity-50"
+              className="font-display min-h-11 rounded-lg bg-brand-pink px-5 font-semibold text-brand-ink transition hover:bg-brand-pink-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-pink disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isSaving ? "Saving…" : "Save project data"}
             </button>
@@ -1054,15 +1128,15 @@ export default function DataSetup() {
                 : "Saving project data…"}
             </p>
           )}
-          {statusMessage && (
+          {(statusMessage || newProjectNotice) && (
             <p role="status" className="rounded-lg bg-green-50 p-4 text-sm text-green-900">
-              {statusMessage}
+              {statusMessage ?? newProjectNotice}
             </p>
           )}
           {validationCount > 0 && (
             <p className="rounded-lg bg-amber-50 p-4 text-sm text-amber-950">
               Fix {validationCount} data {validationCount === 1 ? "issue" : "issues"} before saving.
-              Timetable clashes are checked by the backend in a later phase.
+              Timetable clashes are checked when you generate a timetable.
             </p>
           )}
 
@@ -1081,10 +1155,10 @@ export default function DataSetup() {
                   aria-selected={activeTab === tab.key}
                   aria-controls={`${tab.key}-panel`}
                   onClick={() => setActiveTab(tab.key)}
-                  className={`min-h-11 rounded-t-lg px-4 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 ${
+                  className={`min-h-11 rounded-full px-4 text-sm font-semibold transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-pink ${
                     activeTab === tab.key
-                      ? "border-b-2 border-[#8a204f] bg-[var(--brand-accent)] text-[#111111]"
-                      : "text-white hover:bg-[var(--brand-accent)] hover:text-[#111111]"
+                      ? "bg-brand-pink text-brand-ink"
+                      : "text-white hover:bg-brand-pink/15 hover:text-brand-pink focus-visible:bg-brand-pink/15"
                   }`}
                 >
                   {tab.label}

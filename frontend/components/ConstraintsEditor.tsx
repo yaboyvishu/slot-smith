@@ -1,6 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
+import { useProject } from "../lib/project-context";
+import FavoriteButton from "./FavoriteButton";
+import PageHeader from "./PageHeader";
 import {
   ApiError,
   getProject,
@@ -8,8 +12,6 @@ import {
   updateProjectConstraints,
 } from "../lib/api";
 import type { Constraints, Preference, Project, TimeSlot } from "../lib/types";
-
-const mockProjectId = process.env.NEXT_PUBLIC_USE_MOCK === "1" ? "demo" : "";
 
 const ruleDescriptions = [
   {
@@ -54,7 +56,7 @@ function formatTimeSlot(slot: TimeSlot): string {
 }
 
 export default function ConstraintsEditor() {
-  const [projectId, setProjectId] = useState(mockProjectId);
+  const { projectId, isProjectIdLoaded, rememberProject, registerUnsavedChanges } = useProject();
   const [project, setProject] = useState<Project | null>(null);
   const [constraints, setConstraints] = useState<Constraints | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -66,7 +68,7 @@ export default function ConstraintsEditor() {
 
   useEffect(() => onServerWakingUp(() => setIsWakingUp(true)), []);
 
-  function showError(error: unknown) {
+  const showError = useCallback((error: unknown) => {
     setErrorMessage(
       error instanceof ApiError
         ? error.message
@@ -76,34 +78,65 @@ export default function ConstraintsEditor() {
       error instanceof ApiError ? detailsFromApiError(error) : [],
     );
     setStatusMessage(null);
-  }
+  }, []);
 
-  async function handleLoad(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  useEffect(() => {
+    if (!isProjectIdLoaded) {
+      return;
+    }
+
+    const selectedProjectId = projectId;
+    if (!selectedProjectId) {
+      setProject(null);
+      setConstraints(null);
+      setErrorMessage(null);
+      setErrorDetails([]);
+      setIsLoading(false);
+      return;
+    }
+
+    let isCancelled = false;
     setIsLoading(true);
     setIsWakingUp(false);
     setErrorMessage(null);
     setErrorDetails([]);
     setStatusMessage(null);
 
-    try {
-      const loadedProject = await getProject(projectId.trim());
-      setProject(loadedProject);
-      setConstraints(loadedProject.constraints);
-      setProjectId(loadedProject.id);
-    } catch (error) {
-      setProject(null);
-      setConstraints(null);
-      showError(error);
-    } finally {
-      setIsLoading(false);
-      setIsWakingUp(false);
+    async function loadSelectedProject() {
+      try {
+        const loadedProject = await getProject(selectedProjectId as string);
+        if (!isCancelled) {
+          setProject(loadedProject);
+          setConstraints(loadedProject.constraints);
+          rememberProject(loadedProject);
+        }
+      } catch (error) {
+        if (!isCancelled) {
+          setProject(null);
+          setConstraints(null);
+          showError(error);
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsLoading(false);
+          setIsWakingUp(false);
+        }
+      }
     }
-  }
 
-  async function handleSave() {
+    void loadSelectedProject();
+    return () => {
+      isCancelled = true;
+    };
+  }, [isProjectIdLoaded, projectId, rememberProject, showError]);
+
+  const hasUnsavedConstraints = Boolean(
+    project && constraints && JSON.stringify(project.constraints) !== JSON.stringify(constraints),
+  );
+
+  const handleSave = useCallback(async (): Promise<boolean> => {
     if (!project || !constraints) {
-      return;
+      return false;
     }
 
     setIsSaving(true);
@@ -120,13 +153,21 @@ export default function ConstraintsEditor() {
       setProject(savedProject);
       setConstraints(savedProject.constraints);
       setStatusMessage("Constraints saved.");
+      return true;
     } catch (error) {
       showError(error);
+      return false;
     } finally {
       setIsSaving(false);
       setIsWakingUp(false);
     }
-  }
+  }, [constraints, project, showError]);
+
+  useEffect(() => registerUnsavedChanges(hasUnsavedConstraints, handleSave), [
+    handleSave,
+    hasUnsavedConstraints,
+    registerUnsavedChanges,
+  ]);
 
   function updateConstraint<K extends keyof Omit<Constraints, "preferences">>(
     field: K,
@@ -215,52 +256,19 @@ export default function ConstraintsEditor() {
 
   return (
     <section className="space-y-6">
-      <header>
-        <p className="text-sm font-semibold uppercase tracking-wide text-[var(--brand-accent)]">
-          Phase 2 · Constraints
-        </p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-[var(--brand-accent)]">
-          Scheduling rules
-        </h1>
-        <p className="mt-3 max-w-3xl leading-7 text-[var(--brand-accent)]">
-          Load a project to choose which rules the scheduler must follow and
-          which faculty time preferences it should try to meet.
-        </p>
-      </header>
+      <PageHeader
+        step={2}
+        total={6}
+        title="Choose your rules"
+        accentLine="set your priorities."
+        description="Decide which rules must always hold and which preferences the scheduler should try to meet."
+      />
 
-      <form
-        onSubmit={handleLoad}
-        className="flex max-w-2xl flex-wrap items-end gap-3 rounded-2xl border border-slate-300 bg-[var(--panel-background)] p-5 text-slate-950 shadow-lg sm:p-6"
-      >
-        <div className="min-w-56 flex-1">
-          <label
-            htmlFor="project-id"
-            className="block text-sm font-medium text-slate-800"
-          >
-            Project id
-          </label>
-          <input
-            id="project-id"
-            name="id"
-            required
-            value={projectId}
-            onChange={(event) => setProjectId(event.target.value)}
-            aria-describedby="project-id-help"
-            className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-slate-900 outline-none focus-visible:border-[#8a204f] focus-visible:ring-2 focus-visible:ring-[#f8c8dc]"
-          />
-          <p id="project-id-help" className="mt-1 text-xs leading-5 text-slate-600">
-            Use the project id shown on the Data setup screen. Mock mode starts
-            with “demo”.
-          </p>
-        </div>
-        <button
-          type="submit"
-          disabled={isLoading || !projectId.trim()}
-          className="min-h-11 rounded-lg border border-[#8a204f] px-5 font-semibold text-[#681638] transition hover:bg-[#f8c8dc] hover:text-[#111111] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8a204f] disabled:cursor-wait disabled:opacity-50"
-        >
-          {isLoading ? "Loading…" : "Load project"}
-        </button>
-      </form>
+      {!isProjectIdLoaded && (
+        <p role="status" className="rounded-lg bg-slate-100 p-4 text-sm text-slate-800">
+          Loading selected project…
+        </p>
+      )}
 
       {isLoading && (
         <p role="status" className="rounded-lg bg-blue-50 p-4 text-sm text-blue-900">
@@ -286,10 +294,23 @@ export default function ConstraintsEditor() {
         </div>
       )}
 
-      {!project && !isLoading && !errorMessage && (
+      {isProjectIdLoaded &&
+        !projectId &&
+        !project &&
+        !isLoading &&
+        !errorMessage && (
         <div className="max-w-2xl rounded-2xl border border-dashed border-slate-300 bg-[var(--panel-background)] p-6 text-sm leading-6 text-slate-700 shadow-md">
-          Enter a project id and choose <strong>Load project</strong> to view
-          and edit its constraints.
+          <p className="font-semibold text-slate-900">No project selected.</p>
+          <p className="mt-1">
+            Go to{" "}
+            <Link
+              href="/data"
+              className="font-semibold text-brand-maroon underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-maroon-strong"
+            >
+              Data setup
+            </Link>{" "}
+            to create a project first.
+          </p>
         </div>
       )}
 
@@ -297,14 +318,17 @@ export default function ConstraintsEditor() {
         <div className="space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-300 bg-[var(--panel-background)] px-4 py-3 text-slate-950 shadow-md">
             <div>
-              <p className="font-semibold text-slate-900">{project.name}</p>
-              <p className="text-sm text-slate-600">Project ID: {project.id}</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="font-semibold text-slate-900">{project.name}</p>
+                <FavoriteButton id={project.id} name={project.name} />
+              </div>
+              <p className="text-sm text-slate-600">Project reference: {project.id}</p>
             </div>
             <button
               type="button"
               onClick={handleSave}
               disabled={isSaving}
-              className="min-h-11 rounded-lg bg-[#f8c8dc] px-5 font-semibold text-[#111111] transition hover:bg-[#f3a9c9] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f8c8dc] disabled:cursor-wait disabled:opacity-60"
+              className="font-display min-h-11 rounded-lg bg-brand-pink px-5 font-semibold text-brand-ink transition hover:bg-brand-pink-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-pink disabled:cursor-wait disabled:opacity-60"
             >
               {isSaving ? "Saving…" : "Save constraints"}
             </button>
@@ -334,8 +358,8 @@ export default function ConstraintsEditor() {
               Must-follow rules
             </h2>
             <p className="mt-2 text-sm leading-6 text-slate-600">
-              Turn these on when the scheduler must obey the rule. These
-              settings do not check an existing timetable in this phase.
+              Turn these on when the scheduler must always follow a rule. They
+              apply when you generate a timetable.
             </p>
             <div className="mt-4 divide-y divide-slate-200">
               {ruleDescriptions.map((rule) => (
@@ -351,9 +375,6 @@ export default function ConstraintsEditor() {
                     <span className="mt-1 block text-sm leading-6 text-slate-600">
                       {rule.description}
                     </span>
-                    <code className="mt-1 block text-xs text-slate-600">
-                      {rule.field}
-                    </code>
                   </span>
                   <input
                     id={rule.field}
@@ -362,7 +383,7 @@ export default function ConstraintsEditor() {
                     onChange={(event) =>
                       updateConstraint(rule.field, event.target.checked)
                     }
-                    className="mt-1 size-5 shrink-0 rounded border-slate-300 accent-[#8a204f] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8a204f]"
+                    className="mt-1 size-5 shrink-0 rounded border-slate-300 accent-brand-maroon-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-maroon-strong"
                   />
                 </label>
               ))}
@@ -382,16 +403,15 @@ export default function ConstraintsEditor() {
                   Preferences
                 </h2>
                 <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-                  Preferences are goals, not must-follow rules. The solver
-                  combines these entries with faculty&apos;s{" "}
-                  <code>preferred_slot_ids</code> from Data setup.
+                  Preferences are goals, not must-follow rules. The scheduler
+                  also considers faculty members&apos; preferred time slots from Add data.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={addPreference}
                 disabled={!hasDataForPreferences}
-                className="min-h-10 rounded-lg border border-[#8a204f] px-4 text-sm font-semibold text-[#681638] transition hover:bg-[#f8c8dc] hover:text-[#111111] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8a204f] disabled:cursor-not-allowed disabled:opacity-50"
+                className="min-h-10 rounded-lg border border-brand-maroon-strong px-4 text-sm font-semibold text-brand-maroon transition hover:bg-brand-pink hover:text-brand-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-maroon-strong disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Add preference
               </button>
@@ -402,9 +422,9 @@ export default function ConstraintsEditor() {
                 Add at least one faculty member and one time slot in{" "}
                 <a
                   href="/data"
-                  className="font-semibold underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8a204f]"
+                  className="font-semibold underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-maroon-strong"
                 >
-                  Data setup
+                  Add data
                 </a>{" "}
                 before adding a preference.
               </div>
@@ -412,8 +432,8 @@ export default function ConstraintsEditor() {
 
             {constraints.preferences.length === 0 ? (
               <p className="mt-5 rounded-lg bg-white p-4 text-sm leading-6 text-slate-600">
-                No extra preferences have been added. Faculty preferences saved
-                in Data setup still apply to the solver.
+                You haven&apos;t added any extra preferences yet. Faculty preferences
+                saved in Add data will still be considered.
               </p>
             ) : (
               <ul className="mt-5 space-y-4">
@@ -439,7 +459,7 @@ export default function ConstraintsEditor() {
                             Faculty preference {index + 1}
                           </p>
                           <p className="mt-1 text-xs text-slate-600">
-                            id: {preference.id} · type: {preference.type}
+                          Preference {index + 1} · {preference.type.replaceAll("_", " ")}
                           </p>
                         </div>
                         <button
@@ -457,7 +477,7 @@ export default function ConstraintsEditor() {
                           htmlFor={`preference-${index}-faculty`}
                           className="block text-sm font-medium text-slate-800"
                         >
-                          faculty_id
+                          Faculty member
                         </label>
                         <select
                           id={`preference-${index}-faculty`}
@@ -468,11 +488,11 @@ export default function ConstraintsEditor() {
                               faculty_id: event.target.value,
                             })
                           }
-                          className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-slate-900 outline-none focus-visible:border-[#8a204f] focus-visible:ring-2 focus-visible:ring-[#f8c8dc]"
+                          className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-slate-900 outline-none focus-visible:border-brand-maroon-strong focus-visible:ring-2 focus-visible:ring-brand-pink"
                         >
                           {!selectedFaculty && (
                             <option value={preference.faculty_id}>
-                              Unknown faculty id: {preference.faculty_id}
+                              Faculty member not found: {preference.faculty_id}
                             </option>
                           )}
                           {project.data.faculty.map((faculty) => (
@@ -485,7 +505,7 @@ export default function ConstraintsEditor() {
 
                       <fieldset className="mt-5">
                         <legend className="text-sm font-medium text-slate-800">
-                          slot_ids — choose preferred time slots
+                          Choose preferred time slots
                         </legend>
                         {project.data.slots.length === 0 ? (
                           <p className="mt-2 text-sm text-slate-600">
@@ -509,7 +529,7 @@ export default function ConstraintsEditor() {
                                       event.target.checked,
                                     )
                                   }
-                                  className="mt-0.5 size-4 shrink-0 accent-[#8a204f] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8a204f]"
+                                  className="mt-0.5 size-4 shrink-0 accent-brand-maroon-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-maroon-strong"
                                 />
                                 <span>{formatTimeSlot(slot)}</span>
                               </label>
@@ -530,7 +550,7 @@ export default function ConstraintsEditor() {
                                       false,
                                     )
                                   }
-                                  className="mt-0.5 size-4 shrink-0 accent-[#8a204f] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8a204f]"
+                                  className="mt-0.5 size-4 shrink-0 accent-brand-maroon-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-maroon-strong"
                                 />
                                 <span>Unavailable slot id: {slotId}</span>
                               </label>

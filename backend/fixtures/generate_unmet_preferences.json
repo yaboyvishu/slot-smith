@@ -1,0 +1,54 @@
+{
+  "status": "complete_with_unmet_preferences",
+  "timetable": [
+    {
+      "id": "E1",
+      "course_id": "C1",
+      "faculty_id": "F1",
+      "room_id": "R101",
+      "start_slot_id": "MON_09",
+      "length_slots": 1,
+      "slot_ids": [
+        "MON_09"
+      ]
+    },
+    {
+      "id": "E2",
+      "course_id": "C1",
+      "faculty_id": "F1",
+      "room_id": "R101",
+      "start_slot_id": "TUE_09",
+      "length_slots": 1,
+      "slot_ids": [
+        "TUE_09"
+      ]
+    },
+    {
+      "id": "E3",
+      "course_id": "C2",
+      "faculty_id": "F2",
+      "room_id": "R102",
+      "start_slot_id": "MON_10",
+      "length_slots": 2,
+      "slot_ids": [
+        "MON_10",
+        "MON_11"
+      ]
+    }
+  ],
+  "unmet_constraints": [
+    {
+      "type": "preference_unmet",
+      "message": "Dr. Sharma prefers Mon 09:00-10:00 and Mon 10:00-11:00, but 1 of their 2 classes is placed outside those slots.",
+      "suggested_fix": "Add more of their preferred slots or rooms, or relax this preference.",
+      "affected_entry_ids": [
+        "E2"
+      ],
+      "affected_slot_ids": [
+        "TUE_09"
+      ]
+    }
+  ],
+  "preferences_met": 0,
+  "preferences_total": 1
+}

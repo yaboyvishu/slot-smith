@@ -65,6 +65,39 @@ export interface Constraints {
   preferences: Preference[];
 }
 
+export interface AIClarificationAnswer {
+  question_id: string;
+  question: string;
+  answer: string;
+}
+
+export interface AIClarificationQuestion {
+  question_id: string;
+  reason: "ambiguous" | "unsupported" | "contradictory";
+  question: string;
+}
+
+export interface AIInterpretRequest {
+  instruction: string;
+  clarification_answers: AIClarificationAnswer[];
+}
+
+export interface AIInterpretReady {
+  status: "ready";
+  proposed_constraints: Constraints;
+  summary: string;
+  clarification_questions: [];
+}
+
+export interface AIInterpretNeedsClarification {
+  status: "needs_clarification";
+  proposed_constraints: null;
+  summary: null;
+  clarification_questions: AIClarificationQuestion[];
+}
+
+export type AIInterpretResult = AIInterpretReady | AIInterpretNeedsClarification;
+
 export interface TimetableEntry {
   id: string;
   course_id: string;
@@ -74,6 +107,10 @@ export interface TimetableEntry {
   length_slots: number;
   slot_ids: string[];
 }
+
+export type TimetableEntryInput = Omit<TimetableEntry, "slot_ids"> & {
+  slot_ids?: string[];
+};
 
 export type ConflictType =
   | "teacher_clash"
@@ -121,7 +158,7 @@ export interface HealthResponse {
 }
 
 export interface ValidateRequest {
-  timetable: TimetableEntry[];
+  timetable: TimetableEntryInput[];
 }
 
 export interface ValidateResponse {
@@ -130,7 +167,7 @@ export interface ValidateResponse {
 }
 
 export interface SaveTimetableRequest {
-  timetable: TimetableEntry[];
+  timetable: TimetableEntryInput[];
 }
 
 export interface CreateProjectRequest {

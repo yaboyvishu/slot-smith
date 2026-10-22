@@ -1,6 +1,14 @@
 import sampleProjectFixture from "../mocks/sample_project.json";
+import impossibleProjectFixture from "../mocks/sample_project_impossible.json";
+import generateCompleteFixture from "../mocks/generate_complete.json";
+import generateImpossibleFixture from "../mocks/generate_impossible.json";
+import generateUnmetPreferencesFixture from "../mocks/generate_unmet_preferences.json";
+import validateCleanFixture from "../mocks/validate_clean.json";
+import validateClashesFixture from "../mocks/validate_clashes.json";
 import type {
   ApiErrorResponse,
+  AIInterpretRequest,
+  AIInterpretResult,
   Constraints,
   CreateProjectRequest,
   GenerateResult,
@@ -18,7 +26,13 @@ type ApiErrorCode =
   | "NOT_FOUND"
   | "METHOD_NOT_ALLOWED"
   | "CONFLICT"
-  | "INTERNAL_ERROR";
+  | "INTERNAL_ERROR"
+  | "NOT_IMPLEMENTED"
+  | "AI_NOT_CONFIGURED"
+  | "AI_RATE_LIMITED"
+  | "AI_PROVIDER_ERROR"
+  | "AI_RESPONSE_INVALID"
+  | "AI_TIMEOUT";
 
 export class ApiError extends Error {
   constructor(
@@ -37,10 +51,116 @@ type WakingUpListener = () => void;
 const wakingUpListeners = new Set<WakingUpListener>();
 const usesMocks = process.env.NEXT_PUBLIC_USE_MOCK === "1";
 const mockProjectFixture: Project = sampleProjectFixture as Project;
-let mockProject: Project = structuredClone(mockProjectFixture);
+const impossibleProject: Project = impossibleProjectFixture as Project;
+export const isMockMode = usesMocks;
+
+export type GenerateMockScenario = "complete" | "unmet" | "impossible";
+export type ValidateMockScenario = "clean" | "clashes";
+
+const mockProjects = new Map<string, Project>([
+  [mockProjectFixture.id, structuredClone(mockProjectFixture)],
+  [impossibleProject.id, structuredClone(impossibleProject)],
+]);
+const MOCK_PROJECTS_STORAGE_KEY = "slotsmith.mock-projects";
+const LEGACY_MOCK_PROJECT_STORAGE_KEY = "slotsmith.mock-project-data";
+const MOCK_RESULTS_STORAGE_KEY = "slotsmith.mock-generation-results";
+let mockProjectLoaded = false;
+let mockProjectCounter = 0;
 let firstRequestFinished = false;
 let firstRequestTimer: ReturnType<typeof setTimeout> | undefined;
 let wakingUpWasSignaled = false;
+
+function readMockProjectFromStorage(): void {
+  if (mockProjectLoaded || typeof window === "undefined") return;
+  mockProjectLoaded = true;
+
+  try {
+    const stored = window.localStorage.getItem(MOCK_PROJECTS_STORAGE_KEY);
+    const parsed: unknown = stored ? JSON.parse(stored) : null;
+    const savedProjects: unknown[] = Array.isArray(parsed) ? parsed : [];
+    try {
+      const legacyStored = window.localStorage.getItem(LEGACY_MOCK_PROJECT_STORAGE_KEY);
+      if (legacyStored) savedProjects.push(JSON.parse(legacyStored));
+    } catch {
+      // Ignore the old single-project value if it cannot be read.
+    }
+    for (const value of savedProjects) {
+      if (
+        typeof value === "object" && value !== null &&
+        "id" in value && typeof value.id === "string" &&
+        "name" in value && typeof value.name === "string" &&
+        "data" in value && typeof value.data === "object" && value.data !== null &&
+        "courses" in value.data && Array.isArray(value.data.courses) &&
+        "faculty" in value.data && Array.isArray(value.data.faculty) &&
+        "rooms" in value.data && Array.isArray(value.data.rooms) &&
+        "slots" in value.data && Array.isArray(value.data.slots) &&
+        "constraints" in value && typeof value.constraints === "object" && value.constraints !== null &&
+        "timetable" in value && Array.isArray(value.timetable)
+      ) {
+        mockProjects.set(value.id, value as Project);
+      }
+    }
+  } catch {
+    // Corrupt or blocked browser storage should leave the sample project usable.
+  }
+}
+
+function persistMockProject(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(MOCK_PROJECTS_STORAGE_KEY, JSON.stringify([...mockProjects.values()]));
+  } catch {
+    // Mock mode remains usable for this session if storage is unavailable.
+  }
+}
+
+function createMockProjectId(): string {
+  let id: string;
+  do {
+    mockProjectCounter += 1;
+    id = `mock-${Date.now()}-${mockProjectCounter}`;
+  } while (mockProjects.has(id));
+  return id;
+}
+
+function isGenerateResult(value: unknown): value is GenerateResult {
+  return typeof value === "object" && value !== null &&
+    "status" in value && ["complete", "complete_with_unmet_preferences", "impossible"].includes(String(value.status)) &&
+    "timetable" in value && Array.isArray(value.timetable) &&
+    "unmet_constraints" in value && Array.isArray(value.unmet_constraints) &&
+    "preferences_met" in value && typeof value.preferences_met === "number" &&
+    "preferences_total" in value && typeof value.preferences_total === "number";
+}
+
+function persistMockResult(id: string, result: GenerateResult): void {
+  if (typeof window === "undefined") return;
+  try {
+    const stored = window.localStorage.getItem(MOCK_RESULTS_STORAGE_KEY);
+    const parsed: unknown = stored ? JSON.parse(stored) : null;
+    const results: Record<string, GenerateResult> =
+      typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)
+        ? parsed as Record<string, GenerateResult>
+        : {};
+    results[id] = result;
+    window.localStorage.setItem(MOCK_RESULTS_STORAGE_KEY, JSON.stringify(results));
+  } catch {
+    // A blocked or malformed storage value should not prevent mock generation.
+  }
+}
+
+export function getMockGeneratedResult(id: string): GenerateResult | null {
+  if (!usesMocks || typeof window === "undefined") return null;
+  try {
+    const stored = window.localStorage.getItem(MOCK_RESULTS_STORAGE_KEY);
+    if (!stored) return null;
+    const results: unknown = JSON.parse(stored);
+    if (typeof results !== "object" || results === null || !(id in results)) return null;
+    const result = (results as Record<string, unknown>)[id];
+    return isGenerateResult(result) ? structuredClone(result) : null;
+  } catch {
+    return null;
+  }
+}
 
 export function onServerWakingUp(listener: WakingUpListener): () => void {
   wakingUpListeners.add(listener);
@@ -60,20 +180,14 @@ function signalServerWakingUp(): void {
   }
 }
 
-function unavailableMockFixture(feature: string): never {
-  throw new ApiError(
-    "INTERNAL_ERROR",
-    `Mock fixture unavailable for ${feature}. Ask the backend teammate for the fixture before testing this feature in mock mode.`,
-    [],
-  );
-}
-
 function getMockProject(id: string): Project {
-  if (id !== mockProject.id) {
+  readMockProjectFromStorage();
+  const project = mockProjects.get(id);
+  if (!project) {
     throw new ApiError("NOT_FOUND", "Project not found in the sample fixture.", [], 404);
   }
 
-  return structuredClone(mockProject);
+  return structuredClone(project);
 }
 
 function getApiBaseUrl(): string {
@@ -116,6 +230,12 @@ function asApiErrorCode(code: string): ApiErrorCode {
     case "METHOD_NOT_ALLOWED":
     case "CONFLICT":
     case "INTERNAL_ERROR":
+    case "NOT_IMPLEMENTED":
+    case "AI_NOT_CONFIGURED":
+    case "AI_RATE_LIMITED":
+    case "AI_PROVIDER_ERROR":
+    case "AI_RESPONSE_INVALID":
+    case "AI_TIMEOUT":
       return code;
     default:
       return "INTERNAL_ERROR";
@@ -157,8 +277,9 @@ async function request<T>(
   path: string,
   method: "GET" | "POST" | "PUT",
   body?: unknown,
+  allowInMockMode = false,
 ): Promise<T> {
-  if (usesMocks) {
+  if (usesMocks && !allowInMockMode) {
     throw new Error("request() must not be used while mock mode is enabled.");
   }
 
@@ -201,7 +322,13 @@ async function request<T>(
 
 async function requestFile(path: string): Promise<Blob> {
   if (usesMocks) {
-    return unavailableMockFixture(path.endsWith("/pdf") ? "PDF export" : "ICS export");
+    const format = path.endsWith("/pdf") ? "PDF" : "ICS";
+    throw new ApiError(
+      "NOT_IMPLEMENTED",
+      `${format} export is not available in mock mode. The export endpoints are not implemented by the backend yet.`,
+      [],
+      501,
+    );
   }
 
   if (!firstRequestFinished && firstRequestTimer === undefined) {
@@ -249,8 +376,18 @@ export async function createProject(
   input: CreateProjectRequest,
 ): Promise<Project> {
   if (usesMocks) {
-    mockProject = { ...structuredClone(mockProjectFixture), name: input.name };
-    return structuredClone(mockProject);
+    readMockProjectFromStorage();
+    const project: Project = {
+      ...structuredClone(mockProjectFixture),
+      id: createMockProjectId(),
+      name: input.name.trim(),
+      data: { courses: [], faculty: [], rooms: [], slots: [] },
+      constraints: { ...mockProjectFixture.constraints, preferences: [] },
+      timetable: [],
+    };
+    mockProjects.set(project.id, project);
+    persistMockProject();
+    return structuredClone(project);
   }
 
   return request<Project>("/api/projects", "POST", input);
@@ -269,9 +406,11 @@ export async function updateProjectData(
   data: ProjectData,
 ): Promise<Project> {
   if (usesMocks) {
-    getMockProject(id);
-    mockProject = { ...mockProject, data };
-    return structuredClone(mockProject);
+    const project = getMockProject(id);
+    const updatedProject = { ...project, data };
+    mockProjects.set(id, updatedProject);
+    persistMockProject();
+    return structuredClone(updatedProject);
   }
 
   return request<Project>(
@@ -286,9 +425,11 @@ export async function updateProjectConstraints(
   constraints: Constraints,
 ): Promise<Project> {
   if (usesMocks) {
-    getMockProject(id);
-    mockProject = { ...mockProject, constraints };
-    return structuredClone(mockProject);
+    const project = getMockProject(id);
+    const updatedProject = { ...project, constraints };
+    mockProjects.set(id, updatedProject);
+    persistMockProject();
+    return structuredClone(updatedProject);
   }
 
   return request<Project>(
@@ -298,10 +439,33 @@ export async function updateProjectConstraints(
   );
 }
 
-export async function generateTimetable(id: string): Promise<GenerateResult> {
+export async function interpretAIConstraints(
+  id: string,
+  input: AIInterpretRequest,
+): Promise<AIInterpretResult> {
+  // AI interpretation is a real backend call even while timetable fixtures are enabled.
+  return request<AIInterpretResult>(
+    `/api/projects/${encodeURIComponent(id)}/ai-constraints/interpret`,
+    "POST",
+    input,
+    true,
+  );
+}
+
+export async function generateTimetable(
+  id: string,
+  scenario: GenerateMockScenario = "complete",
+): Promise<GenerateResult> {
   if (usesMocks) {
     getMockProject(id);
-    return unavailableMockFixture("timetable generation");
+    const fixtures: Record<GenerateMockScenario, GenerateResult> = {
+      complete: generateCompleteFixture as GenerateResult,
+      unmet: generateUnmetPreferencesFixture as GenerateResult,
+      impossible: generateImpossibleFixture as GenerateResult,
+    };
+    const result = structuredClone(fixtures[scenario]);
+    persistMockResult(id, result);
+    return result;
   }
 
   return request<GenerateResult>(
@@ -313,10 +477,13 @@ export async function generateTimetable(id: string): Promise<GenerateResult> {
 export async function validateTimetable(
   id: string,
   input: ValidateRequest,
+  scenario: ValidateMockScenario = "clean",
 ): Promise<ValidateResponse> {
   if (usesMocks) {
     getMockProject(id);
-    return unavailableMockFixture("timetable validation");
+    const fixture =
+      scenario === "clashes" ? validateClashesFixture : validateCleanFixture;
+    return structuredClone(fixture as ValidateResponse);
   }
 
   return request<ValidateResponse>(
@@ -331,9 +498,34 @@ export async function saveTimetable(
   input: SaveTimetableRequest,
 ): Promise<Project> {
   if (usesMocks) {
-    getMockProject(id);
-    mockProject = { ...mockProject, timetable: input.timetable };
-    return structuredClone(mockProject);
+    const project = getMockProject(id);
+    const slots = project.data.slots;
+    const timetable = input.timetable.map((entry) => {
+      const startSlot = slots.find((slot) => slot.id === entry.start_slot_id);
+      let coveredSlots = startSlot ? [startSlot] : [];
+
+      for (let offset = 1; startSlot && offset < entry.length_slots; offset += 1) {
+        const previous = coveredSlots[offset - 1];
+        const next = slots.find(
+          (slot) =>
+            slot.day === startSlot.day &&
+            slot.start === previous.end,
+        );
+        if (!next) break;
+        coveredSlots = [...coveredSlots, next];
+      }
+
+      return {
+        ...entry,
+        slot_ids: startSlot
+          ? coveredSlots.map((slot) => slot.id)
+          : [entry.start_slot_id],
+      };
+    });
+    const updatedProject = { ...project, timetable };
+    mockProjects.set(id, updatedProject);
+    persistMockProject();
+    return structuredClone(updatedProject);
   }
 
   return request<Project>(

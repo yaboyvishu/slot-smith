@@ -1,0 +1,15 @@
+{
+  "status": "impossible",
+  "timetable": [],
+  "unmet_constraints": [
+    {
+      "type": "no_room_big_enough",
+      "message": "No room can hold Data Structures (CS101): it has 55 students, but the largest room, Lecture Hall 1, seats 40.",
+      "suggested_fix": "Add a room with at least 55 seats, increase Lecture Hall 1's capacity, or turn off the room capacity rule.",
+      "affected_entry_ids": [],
+      "affected_slot_ids": []
+    }
+  ],
+  "preferences_met": 0,
+  "preferences_total": 0
+}
