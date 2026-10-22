@@ -100,15 +100,14 @@ The front end and the back end are separate. The browser talks to the API with J
 | Constraints (clashes, capacity, preferences) | Core | ✔ |
 | Timetable generation with CP-SAT | Core | ✔ |
 | Explanation of unsatisfied constraints (Conflicts panel) | Core | ✔ |
-| Editable timetable grid with instant clash checking | Core | ☐ |
-| PDF export | Core | ☐ |
-| ICS export | Core | ☐ |
-| Benchmark results | Required | ☐ |
-| CSV import of courses, faculty, rooms and slots | Stretch | ☐ |
-| Colour-coded views per faculty and per room | Stretch | ☐ |
-| Save and reopen timetables | Stretch | ☐ |
+| Editable timetable grid with instant clash checking | Core | ✔ |
+| PDF export | Core | ✔ |
+| ICS export | Core | ✔ |
+| Benchmark results | Required | ✔ |
+| CSV import of courses, faculty, rooms and slots | Stretch | ✔ |
+| Colour-coded views per faculty and per room | Stretch |✔|
+| Save and reopen timetables | Stretch |✔ |
 
-*(Tick these off as you finish them.)*
 
 ## Tech Stack
 
