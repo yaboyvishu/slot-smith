@@ -184,9 +184,15 @@ This walkthrough takes you from an empty app to a finished timetable. Allow abou
 
 ### Step 1: Start the app
 Start the API and the web app as shown in [Run the app](#run-the-app), then open `http://localhost:3000`.
+<img width="1600" height="682" alt="image" src="https://github.com/user-attachments/assets/fbf4f292-ba31-4bb5-8ca7-4630058eedd1" />
+
 
 ### Step 2: Data setup
 Open the **Data setup** screen. You need four kinds of information, each in its own tab with an editable table. If CSV import is enabled in your version, you can upload a CSV file instead. See [Input File Formats](#input-file-formats-csv) for the exact columns.
+<img width="1490" height="640" alt="image" src="https://github.com/user-attachments/assets/d87b39b6-1b98-4da8-afd0-1c57a074b949" />
+<img width="1430" height="317" alt="image" src="https://github.com/user-attachments/assets/8025b22c-e435-4355-b3bd-df5a5a69fb04" />
+
+
 
 | Data | What it means | Example |
 |---|---|---|
@@ -201,6 +207,8 @@ The app does basic checks as you type, for example flagging a course with no tea
 
 ### Step 3: Constraints
 Open the **Constraints** screen and choose your rules.
+<img width="1548" height="845" alt="image" src="https://github.com/user-attachments/assets/3bd40f2e-5ac8-43e2-8a11-7d983574a643" />
+
 
 **Must-follow rules** (on by default):
 - **No teacher clash:** a teacher can't teach two classes in the same slot.
@@ -211,6 +219,11 @@ Open the **Constraints** screen and choose your rules.
 
 ### Step 4: Generate
 Open **Generate and results** and click **Generate**. A loading state shows while the solver works. Small inputs finish almost instantly. Bigger ones can take a few seconds.
+<img width="1527" height="837" alt="image" src="https://github.com/user-attachments/assets/90795fdb-6d1c-497d-a9c3-540273a7ec6d" />
+<img width="1492" height="806" alt="image" src="https://github.com/user-attachments/assets/839586ba-c705-43fc-867a-360e95d761e2" />
+![Uploading image.png…]()
+
+
 
 ### Step 5: Read the result
 The result has one of three statuses:
@@ -231,6 +244,9 @@ Switch to **Edit mode** to move a class to another slot or room. After each chan
 
 ### Step 8: Export
 Download the timetable as a **PDF** to print or share, or as an **ICS** file to import into a calendar app. See [Exporting Your Timetable](#exporting-your-timetable).
+<img width="1600" height="656" alt="image" src="https://github.com/user-attachments/assets/d7250834-013e-4d10-aeda-8d765e829540" />
+<img width="1600" height="799" alt="image" src="https://github.com/user-attachments/assets/1c72f3ff-e868-4207-affe-a68f4a90cc85" />
+
 
 ---
 
