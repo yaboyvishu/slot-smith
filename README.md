@@ -425,7 +425,14 @@ The benchmark uses generated test data and runs the same generator and clash che
 
 ## Screenshots
 
-*(Add screenshots of the data setup screen, the generated timetable, the Conflicts panel and edit mode with a red clash.)*
+*data setup screen*
+<img width="1695" height="1135" alt="data-setup" src="https://github.com/user-attachments/assets/c16d407c-bc7a-4800-b83e-33884f2bd7f4" />
+*conflicts pannel*
+<img width="1600" height="1150" alt="conflicts-panel" src="https://github.com/user-attachments/assets/ae72153b-4c37-46e2-90a8-bb830f6052e7" />
+*edit red clash*
+<img width="1600" height="1150" alt="edit-red-clash" src="https://github.com/user-attachments/assets/c15ba3df-f13c-4d16-a465-4be178c44ca2" />
+*generated time table*
+<img width="1585" height="2393" alt="generated-timetable" src="https://github.com/user-attachments/assets/eed3fc9a-afff-4eac-8025-7051304ad6ff" />
 
 ## Team
 
