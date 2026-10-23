@@ -216,13 +216,13 @@ Open the **Constraints** screen and choose your rules.
 - **No room clash:** a room can't host two classes in the same slot.
 - **Room capacity:** a room must be big enough for the course's students.
 
-**Preferences** (optional): things like "Dr. Sharma prefers morning slots." The solver respects as many as it can but may break some if it has no other choice.
+**Preferences(hard and soft)
+<img width="1391" height="748" alt="Screenshot (1)" src="https://github.com/user-attachments/assets/cc5b0c51-7513-4f43-9fd0-635cd27605bc" />
+** 
 
 ### Step 4: Generate
-Open **Generate and results** and click **Generate**. A loading state shows while the solver works. Small inputs finish almost instantly. Bigger ones can take a few seconds.
-<img width="1527" height="837" alt="image" src="https://github.com/user-attachments/assets/90795fdb-6d1c-497d-a9c3-540273a7ec6d" />
-<img width="1492" height="806" alt="image" src="https://github.com/user-attachments/assets/839586ba-c705-43fc-867a-360e95d761e2" />
-![Uploading image.png…]()
+<img width="1396" height="820" alt="Screenshot (2)" src="https://github.com/user-attachments/assets/78980b15-c3aa-4276-843f-a394239ad5af" />
+
 
 
 
