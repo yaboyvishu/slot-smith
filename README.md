@@ -105,7 +105,7 @@ The front end and the back end are separate. The browser talks to the API with J
 | PDF export | Core | ✔ |
 | ICS export | Core | ✔ |
 | Benchmark results | Required | ✔ |
-| CSV import of courses, faculty, rooms and slots | Stretch | ✔ |
+| CSV import of courses, faculty, rooms and slots | Stretch |   |
 | Colour-coded views per faculty and per room | Stretch |✔|
 | Save and reopen timetables | Stretch |✔ |
 
