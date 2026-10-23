@@ -184,7 +184,7 @@ Open `http://localhost:3000` in your browser.
 This walkthrough takes you from an empty app to a finished timetable. Allow about 10 minutes the first time.
 
 ### Step 1: Start the app
-Start the API and the web app as shown in [Run the app](#run-the-app), then open `http://localhost:3000`.
+Start the API and the web app as shown in [Run the app](#run-the-app), then open `http://localhost:3000` or visit https://slot-smith.vercel.app/data
 <img width="1600" height="682" alt="image" src="https://github.com/user-attachments/assets/fbf4f292-ba31-4bb5-8ca7-4630058eedd1" />
 
 
