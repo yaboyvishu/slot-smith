@@ -93,64 +93,6 @@ The front end and the back end are separate. The browser talks to the API with J
 5. **Validate edits.** Manual changes go through the same rule logic via `POST /validate`, so edits and generation always agree.
 
 
--AI-Powered Constraint Assistant (Google Gemini)
-
-Slot Smith integrates Google Gemini to help users express timetable requirements in natural language instead of manually configuring every scheduling constraint.
-
- -What the AI Does
-
-* Natural Language Understanding: Interprets user instructions such as “Avoid scheduling classes on Friday afternoons.”
-* Clarification Questions: Asks follow-up questions when a scheduling request is ambiguous or needs more information.
-* Structured Constraint Extraction: Converts natural-language instructions into structured scheduling preferences that Slot Smith can process.
-* Editable Proposals: Presents the interpreted constraints for users to review and edit before confirming them.
-* User-Controlled Saving: Saves the proposed constraints only after the user explicitly confirms them.
-
- -How Gemini Works with OR-Tools
-
-Slot Smith separates natural-language understanding from timetable optimization:
-
-1. User Input: The user describes their scheduling preferences in everyday language.
-2. Gemini AI: Google Gemini interprets the request, asks clarifying questions when necessary, and produces structured constraint proposals.
-3. User Confirmation: The user reviews and confirms the proposed constraints.
-4. Constraint Validation: The backend validates the submitted constraints against the project’s available scheduling resources.
-5. Timetable Optimization: Google OR-Tools CP-SAT uses the scheduling constraints to solve the timetable generation problem.
-
-Gemini interprets the user’s intent; OR-Tools CP-SAT performs the actual timetable optimization. Gemini does not directly generate the final timetable.
-
- -Technology Stack
-
-* AI Provider: Google Gemini API
-* Configured Gemini Model: gemini-3.1-flash-lite (default model; configurable)
-* Python SDK: google-genai
-* Backend: Python, FastAPI, Uvicorn
-* Optimization Engine: Google OR-Tools CP-SAT
-* Frontend: Next.js, React, TypeScript
-
- -AI Configuration
-
-The AI assistant requires a valid Google Gemini API key.
-
-Configure the following environment variables in the backend environment:
-
--Variable	Description
-GEMINI_API_KEY	API key used to authenticate with the Gemini API
-GEMINI_MODEL	Optional model override; defaults to gemini-3.1-flash-lite
-GEMINI_TIMEOUT_SECONDS	Optional request timeout; defaults to 20 seconds
-
-For local development, set these variables in your local environment. Keep your API key secret and never commit it to GitHub.
-
--Reliability and Safety
-
-* AI-generated constraints are presented for user review before being saved.
-* The backend validates resource references before persisting constraints.
-* Clarification questions help resolve ambiguous requests.
-* Timetable generation remains a separate optimization step handled by OR-Tools CP-SAT.
-* AI interpretation can be imperfect, so users should review the proposed constraints before confirming them.
-
-- Why This Approach?
-
-Combining a generative AI assistant with a constraint optimization solver makes timetable creation more accessible. Users can describe what they need in natural language, while the optimization engine handles the complex scheduling problem systematically.
-
 ## Features
 
 | Feature | Type | Status |
