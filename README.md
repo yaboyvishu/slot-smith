@@ -429,9 +429,9 @@ We tested the solver on inputs of increasing size.
 
 | Name | Year / Program | Role |
 |---|---|---|
-| **Tishya Thareja** | 1st Year / B.Tech CSE (Core) | *(add role)* |
-| **Ishika** | 1st Year / B.Tech CSE (Core) | *(add role)* |
-| **Prateek** | 1st Year / B.Tech CSE (AI/ML) | *(add role)* |
+| **Tishya Thareja** | 1st Year / B.Tech CSE (Core) | api and databse dev|
+| **Ishika** | 1st Year / B.Tech CSE (Core) | frontend dev |
+| **Prateek** | 1st Year / B.Tech CSE (AI/ML) | backend dev |
 
 
 ## Biggest Challenges
