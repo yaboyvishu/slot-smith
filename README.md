@@ -394,18 +394,27 @@ To import an ICS file into **Google Calendar**: open Calendar on the web, click 
 
 ```
 .
-├── frontend/               # Next.js (React) + Tailwind app
-│   ├── app/                # Screens: data setup, constraints, results, edit, export
-│   └── components/         # Timetable grid, conflicts panel, editable tables
-├── backend/                # FastAPI app
-│   ├── main.py             # API routes
-│   ├── schemas/            # Pydantic models for requests and responses
-│   ├── solver/             # CP-SAT model, constraints, conflict explainer
-│   ├── export/             # PDF (ReportLab) and ICS export
-│   └── storage/            # JSON project files
-├── data/                   # Sample input files (CSV)
-├── benchmarks/             # Benchmark scripts and results
-└── README.md
+├── backend/
+│   ├── app/
+│   │   ├── main.py                 # FastAPI application and route setup
+│   │   ├── models/schemas.py       # Request and response models
+│   │   ├── routes/                 # Health and project API endpoints
+│   │   └── services/               # CP-SAT solver, rules, validation, exports, storage
+│   ├── fixtures/                   # Sample projects and API responses
+│   ├── scripts/                    # Demo and benchmark scripts
+│   ├── tests/                      # Backend tests
+│   └── requirements.txt            # Python dependencies
+├── docs/
+│   └── api-contract.md             # REST API request and response contract
+├── frontend/
+│   ├── app/                        # Next.js pages and global styles
+│   ├── components/                 # Screens and reusable UI components
+│   ├── lib/                        # API client, types, and shared state/helpers
+│   ├── mocks/                      # API-shaped sample data for mock mode
+│   ├── public/                     # Static assets
+│   └── package.json                # JavaScript dependencies and commands
+├── README.md
+└── .gitignore
 ```
 
 ## Benchmark
