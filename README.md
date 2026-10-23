@@ -410,13 +410,17 @@ To import an ICS file into **Google Calendar**: open Calendar on the web, click 
 
 ## Benchmark
 
-We tested the solver on inputs of increasing size.
+We ran the solver on three deterministic, synthetic datasets using the project’s benchmark script. Each dataset has 30 weekly time slots, two sessions per course, and teacher morning preferences. Some sessions require two consecutive slots.
 
-| Size | Courses | Faculty | Rooms | Slots | Solve time |
-|---|---|---|---|---|---|
-| Small | ... | ... | ... | ... | ... |
-| Medium | ... | ... | ... | ... | ... |
-| Large | ... | ... | ... | ... | ... |
+| Dataset | Courses | Sessions | Teachers | Rooms | Candidate placements | Result | Clashes | Preferences met | Solve time |
+|---|---:|---:|---:|---:|---:|---|---:|---:|---:|
+| Small | 6 | 12 | 2 | 3 | 710 | Complete | 0 | 2/2 | 0.600 s |
+| Medium | 9 | 18 | 3 | 4 | 1,400 | Complete | 0 | 3/3 | 0.219 s |
+| Large | 15 | 30 | 5 | 6 | 3,840 | Complete | 0 | 5/5 | 0.873 s |
+
+**Test setup:** Python 3.14.7, OR-Tools 9.15.6755, one solver worker, random seed `2026`, and a 10-second solver limit. These are local sample timings; results can vary with hardware and system load.
+
+The benchmark uses generated test data and runs the same generator and clash checker used by the API. It does not measure frontend performance or prove performance on every real-world dataset.
 
 
 ## Screenshots
